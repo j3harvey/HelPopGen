@@ -113,7 +113,7 @@ def low_freq_removal (align, low_freq_poly_threshold, ingroup):
   with low freq polymorphisms replaced 
   '''
   Ingroup_alignment = AlignByGroupNumbers (align, [1])
-  Polymorphic_sites = Ingroup_alignment.polymorphism () ['siteIndices'] 
+  Polymorphic_sites = Ingroup_alignment.polymorphism () ['siteIndices']
   #Create alignment containing only ingroup and outgroup individuals
   Ingroup_outgroup_alignment = AlignByGroupNumbers (align, [1,999])
   
@@ -197,7 +197,7 @@ def main():
       # an underscore to restore original name format.                 |
       seq_name = "".join (seq_lines [0].split ('_') [0])
       
-      #vRemove the '>' from the start of the line -- THIS SHOULD NOT BE NECESSARY (#4)
+      # Remove the '>' from the start of the line -- THIS SHOULD NOT BE NECESSARY (#4)
       seq_name_stripped = seq_name.strip ('>') 
       
       # Contains only the positional info for the locus (not which individual)
@@ -317,7 +317,7 @@ def main():
         i.group = popDict[i.name]
       
       ## Removing low frequency polymorphisms from ingroup (aglaope/amaryllis)
-      Ingroup_outgroup_alignment = low_freq_removal (my_alignment1, low_freq_poly_threshold, 'aglaope_amaryllis') # This function is defined at start of script
+      Ingroup_outgroup_alignment = low_freq_removal (my_alignment1, low_freq_poly_threshold, 'aglaope_amaryllis')
       remove_stop_codons (Ingroup_outgroup_alignment)
       
       ## Removing individuals from the alignment who have too much missing data
