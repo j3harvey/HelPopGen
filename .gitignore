@@ -33,3 +33,9 @@ nosetests.xml
 .mr.developer.cfg
 .project
 .pydevproject
+
+# Ignore data files
+ag5am5par1era4_allGenes_StopCodonsRemoved.fasta
+ag5am5par1era4_outgroup-erato_allGenes_LowFreqThreshold-0_StopCodonsRemoved_RESULTS.csv
+dmel_hmel_1to1.RAW.out
+dmel_hmel_1to1.REFORMAT.out
