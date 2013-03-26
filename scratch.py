@@ -1,10 +1,7 @@
 #! /usr/bin/env python2.7
 
 import Bio.SeqIO
-import csv
-
-#HOPEFULLY NOT
-#import egglib
+import time
 
 inputFile = "ag5am5par1era4_allGenes_StopCodonsRemoved.fasta"
 
@@ -27,18 +24,32 @@ def fastaRecords( fastaFile ):
   seqs = Bio.SeqIO.parse( fastaFile, 'fasta' )
   record = []
   for seq in seqs:
-    if len(record) == 32:
+    if len(record) == 2:
       yield record
       record = [(seq.id, seq.seq.upper().tostring())]
     else:
       record.append((seq.id, seq.seq.upper().tostring()))
-  if len(record) == 32:
+  if len(record) == 2:
     yield record
 
+def anyMultiChange( seq1, seq2 ):
+  diffs = [ (x!=y) & (x!="N") & (y!="N")  for (x,y) in zip( list(seq1), list(seq2) ) ]
+  return sum( [ int(sum(diffs[i:i+3]) > 1) for i in xrange(0,len(seq1),3) ] )
 
+def numHet( seq1, seq2 ):
+  diffs = [ (x!=y) & (x!="N") & (y!="N")  for (x,y) in zip( list(seq1), list(seq2) ) ]
+  return sum( [ int(sum(diffs[i:i+3]) > 0) for i in xrange(0,len(seq1),3) ] )
+
+t0 = time.time()
 with open( inputFile, 'r' ) as fastaFile:
-  for record in fastaRecords( fastaFile ):
-    qualityControl( record )
-    myAlign = egglib.Align( string=str(record) )
-    writeResults( popGenStats( myAlign ) )
+  nMultiChange = sum( [anyMultiChange( record[0][1], record[1][1] ) for record in fastaRecords( fastaFile )] )
 
+t1 = time.time()
+with open( inputFile, 'r' ) as fastaFile:
+  nSites = sum( [len(record[0][1]) for record in fastaRecords( fastaFile )] )
+
+t2 = time.time()
+with open( inputFile, 'r' ) as fastaFile:
+  nHet = sum( [numHet( record[0][1], record[1][1] ) for record in fastaRecords( fastaFile )] )
+
+t3 = time.time()
