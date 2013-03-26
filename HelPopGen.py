@@ -26,6 +26,7 @@ CHANGES TODO:
 
 import os
 import egglib
+import time
 
 ## Defining variables
 
@@ -92,17 +93,6 @@ def AlignByGroupNumbers(align,groupNumbers):
       newAlign.addSequences([align[seqNumber]])
   return newAlign
 
-#def inbase_colFreqs(align, columnNumber):
-#  '''Only used in low_freq_removal so can probably be removed'''
-#  bases = [ x for (i,x) in enumerate( align.column(columnNumber) ) 
-#              if align[i][2] != 999          # ignore outgroup sequences
-#              and x not in "Nn- " ]          # only count valid bases
-#  return { "A" : bases.count("A") / len( inBases ),
-#           "C" : bases.count("C") / len( inBases ),
-#           "G" : bases.count("G") / len( inBases ),
-#           "T" : bases.count("T") / len( inBases ) }
-
-
 def low_freq_removal (align, low_freq_poly_threshold, ingroup):
   '''
   This function takes an alignment with ingroup (1) and outgroup (999) 
@@ -132,13 +122,14 @@ def low_freq_removal (align, low_freq_poly_threshold, ingroup):
       continue                    #
     low_freq_base_ID = [ x for x in "ACTG" if freq_dict[x] == min(base_freqs) ]
     high_freq_base_ID = [ x for x in "ACTG" if freq_dict[x] == max(base_freqs) ]
-    newCol = [ high_freq_base_ID[0] if x in low_freq_base_ID else x for x in align.column(position) ]
+    newCol = [ high_freq_base_ID[0] if (x in low_freq_base_ID) else x for x in align.column(position) ]
     for i in range (Ingroup_alignment.ns()):
         # i specifies which sequence
         # position specifies which column
         # seq[i] specifies which element of list col align should replace with
         Ingroup_outgroup_alignment.set (i, position, newCol[i])
     return Ingroup_outgroup_alignment
+
 
 
 def remove_stop_codons (align):
@@ -158,6 +149,13 @@ def remove_stop_codons (align):
   #      align.set (i, x+2, position3)
   return align
 
+def getLocusName( record ):
+  try:
+    # User defined naming rule
+  except:
+    If this rule fails give it a random name.
+    return "Unknown_locus_" + int( time.time() )
+
 ##################################################
 ### Main body of script
 
@@ -174,60 +172,42 @@ def main():
   
   ### The loop for each gene locus in fasta file
   
-  for locus in separate_seqs:
+  #for locus in separate_seqs:
     # quality control:
     #   choose maximinally informative subset of sequences
     #   remove low frequency polymorphisms
     #   phase data taking into account multi-change codons
     #   remove stops
-    #   calculate stats
-    #   write results
+    # calculate stats
+    # write results
   
-  for n in separate_seqs:
-    if len (n) > 0:
+  for locus in separate_seqs:
+    if len (locus) > 0:
       ## Extracting name of locus from file -- THIS DOESN'T SEEM TO WORK (#4)
       
-      # Each seq_line is a single line consisting of genetic info for given locus for all individuals.
-      # Here we make a new list seq_lines for which each element is a line like in the original multifasta file.
-      # This allows us to get at the name of the file in subsequent steps
-      seq_lines = n.split ('\n')
-      
-      # We can now extract the name of the file. Split on underscore.  |
-      # Take all but first and second element. Then join elements with |-- THIS IS NOT AT ALL WHAT IS HAPPENING (#4)
-      # an underscore to restore original name format.                 |
+      #seq_position = getLocusName( n )
+      seq_lines = locus.split ('\n')
       seq_name = "".join (seq_lines [0].split ('_') [0])
-      
-      # Remove the '>' from the start of the line -- THIS SHOULD NOT BE NECESSARY (#4)
-      seq_name_stripped = seq_name.strip ('>') 
-      
-      # Contains only the positional info for the locus (not which individual)
-      # This control statement takes into account the different name formatting 
-      # of GR genes compared to the others (GR gene names have an extra '_' in them)
+      seq_name_stripped = seq_name.strip ('>')
       if 'HmGr' in seq_lines [0]:
-        seq_position = "_".join (seq_lines [0].split ('_') [2:])
+        seq_position = "_".join(seq_lines[0].split('_')[2:])
       else:
-        seq_position = "".join (seq_lines [0].split ('_') [2:])
+        seq_position = "".join(seq_lines[0].split('_')[2:])
       
-      # Writing new fasta file containing all info from single locus
-      with open (seq_name_stripped + '.fasta', 'w') as f:
-        f.write(n)
-  
+      
       # Identifying individuals with large amounts of missing data and 
-      # appending their names to a list 
-      with open (seq_name_stripped + '.fasta', 'rU') as gene_sequences:
-        gene_sequences_lines = gene_sequences.readlines()
-        Missing_data_individuals = []
-        Missing_data_individuals_names =[]
-        # picks out all the lines with sequence information
-        for i in  range (1, len (gene_sequences_lines), 2):
-          if float (gene_sequences_lines [i].count ('N'))/len (gene_sequences_lines [i]) > missing_data_threshold: 
-            individual_line = gene_sequences_lines [i-1]
-            individual_name = individual_line.strip ('>\n')
-            individual_sp = individual_name.split ('.')[0]
-            # Append any individuals who have more than a threshold fraction of Ns
-            # in the sequence to the Missing_data_individuals list.
-            Missing_data_individuals.append (individual_name)
-            Missing_data_individuals_names.append (individual_sp)
+      Missing_data_individuals = []
+      Missing_data_individuals_names =[]
+      # picks out all the lines with sequence information
+      for i in  range (1, len (seq_lines), 2):
+        if float (seq_lines [i].count ('N'))/len (seq_lines [i]) > missing_data_threshold: 
+          individual_line = seq_lines [i-1]
+          individual_name = individual_line.strip ('>\n')
+          individual_sp = individual_name.split ('.')[0]
+          # Append any individuals who have more than a threshold fraction of Ns
+          # in the sequence to the Missing_data_individuals list.
+          Missing_data_individuals.append (individual_name)
+          Missing_data_individuals_names.append (individual_sp)
   
       # Count number of ingroup and outgroup sequences with too much missing data
       # NO use group numbers...
