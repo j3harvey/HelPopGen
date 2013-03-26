@@ -24,7 +24,7 @@ CHANGES TODO:
 
 ## Import dependencies
 
-import os
+#import os
 import egglib
 import time
 
@@ -53,11 +53,17 @@ missing_data_threshold = 0.5
 # Input file
 Input_file = 'test.fasta'
 
+# Log file
+logFile = "log.txt"
+def log(string):
+  with open(logFile,'r') as f:
+    f.write(string)
+
 # Results file (#3)
-Results_file = open ('ag5am5par1era4_outgroup-' + 
-                     outgroup_sp + '_allGenes_LowFreqThreshold-' + 
-                     str(low_freq_poly_threshold) + 
-                     '_StopCodonsRemoved_RESULTS.txt', 'w')
+Results_file = 'ag5am5par1era4_outgroup-' + 
+                outgroup_sp + '_allGenes_LowFreqThreshold-' + 
+                str(low_freq_poly_threshold) + 
+                '_StopCodonsRemoved_RESULTS.txt'
 
 ColHeaders = ['Coordinates',            # locus
               'Alleles_ingroup',        # number of ingroup alleles
@@ -78,9 +84,9 @@ ColHeaders = ['Coordinates',            # locus
               'Ps_outgroup',            # number of synonymous polymorphisms
               'PiN_outgroup',           # non-synonymous heterozygocity
               'PiS_outgroup']           # non-synonymous heterozygocity
-Results_file.write( '\t'.join(ColHeaders) + '\n' )
 
-
+with open( Results_file,'w') as f:
+  f.write( '\t'.join(ColHeaders) + '\n' )
 
 ##################################################
 ## Defining functions
@@ -230,24 +236,22 @@ def main():
       # Cannot calculate polymorphism data with just 1 sequence
       if ingroup_missing_count >= number_ingroup_seqs - 1: 
         print('Ingroup individuals have insufficient coverage on ' + seq_position )
-        Results_file.write(seq_position + 
-                            ' - Ingroup individuals have insufficient coverage\n') # (#3)
+        log(seq_position + ' - Ingroup individuals have insufficient coverage\n')
         continue
       # Stop if only 1 or 0 outgroup sequences have sufficient coverage
       elif outgroup_missing_count >= number_outgroup_seqs - 1:
         print('Outgroup individuals have insufficient coverage on ' + seq_position)
-        Results_file.write(seq_position + 
-                            ' - Outgroup individuals have insufficient coverage\n') # (#3)
+        log(seq_position + ' - Outgroup individuals have insufficient coverage\n')
         continue
-         
+      
       ## Calculate pop gen statistics
 
       # Convert fasta file into egglib object
       try:
-        my_alignment1 = egglib.Align (seq_name_stripped + '.fasta')
+        my_alignment1 = egglib.Align(string=locus)
       except ValueError:
         print( "Alignment failed at " + seq_position )
-        Results_file.write(seq_position + " - alignment failed.")
+        log(seq_position + " - alignment failed.")
         continue
       
       ## Assigning population numbers
@@ -330,10 +334,10 @@ def main():
         data2BPP = Ingroup_outgroup_alignment.polymorphismBPP (dataType = 4)
         data_outgrp = Align_outgroup_pop.polymorphism(minimumExploitableData = 1)
         data_outgrpBPP = Align_outgroup_pop.polymorphismBPP (dataType = 4)
-      except RuntimeError as error: # (#3)
-        Results_file.write (seq_position + 
-                            '- Problem in using polymorphism methods, ingroup with insufficient data -' + 
-                            str(error) + '\n')
+      except RuntimeError as error:
+        log(seq_position + 
+            '- Problem in using polymorphism methods, ingroup with insufficient data -' + 
+            str(error) + '\n')
         continue
       
       
@@ -400,29 +404,27 @@ def main():
       
       # Write statistics to results file- Use BPP for certain stat
       # use 1 when only ingroup required, 2 when outgroup also required (#3)
-      Results_file.write( '\t'.join( [seq_position,
-                                      str(Align_ingroup_pop.ns()),
-                                      str(data1BPP['NSsites']),
-                                      str(data1BPP['Ssites']),
-                                      str(data2BPP['MK'][0]),
-                                      str(data2BPP['MK'][1]),
-                                      str(data2BPP ['MK'][2]),
-                                      str(data2BPP ['MK'][3]),
-                                      str(data1BPP ['PiNS']),
-                                      str(data1BPP['PiS']),
-                                      str(Align_outgroup_pop.ns()),
-                                      str(data_outgrpBPP['NSsites']),
-                                      str(data_outgrpBPP['Ssites']),
-                                      str(outgroup_PN),
-                                      str(outgroup_PS),
-                                      str(data_outgrpBPP ['PiNS']),
-                                      str(data_outgrpBPP['PiS'])) + '\n')
+      with open(Results_file, 'w') as f:
+        f.write( '\t'.join( [seq_position,
+                             str(Align_ingroup_pop.ns()),
+                             str(data1BPP['NSsites']),
+                             str(data1BPP['Ssites']),
+                             str(data2BPP['MK'][0]),
+                             str(data2BPP['MK'][1]),
+                             str(data2BPP ['MK'][2]),
+                             str(data2BPP ['MK'][3]),
+                             str(data1BPP ['PiNS']),
+                             str(data1BPP['PiS']),
+                             str(Align_outgroup_pop.ns()),
+                             str(data_outgrpBPP['NSsites']),
+                             str(data_outgrpBPP['Ssites']),
+                             str(outgroup_PN),
+                             str(outgroup_PS),
+                             str(data_outgrpBPP ['PiNS']),
+                             str(data_outgrpBPP['PiS'])) + '\n')
       
-      # Delete the fasta file that has been created for this gene locus alone
-      # Prevents accumulation of large number of intermediary fasta files
-      os.system ('rm ' + seq_name_stripped + '.fasta')
   
-  Results_file.close ()
+  #Results_file.close ()
 
 #When run from a shell as "python script.py" the function main() is executed
 #When imported from within the python interpreter, all functions are loaded but main() is not run
