@@ -133,7 +133,7 @@ def low_freq_removal (align, low_freq_poly_threshold, ingroup):
         # i specifies which sequence
         # position specifies which column
         # seq[i] specifies which element of list col align should replace with
-        Ingroup_outgroup_alignment.set (i, position, newCol[i])
+        Ingroup_outgroup_alignment.set(i, position, newCol[i])
     return Ingroup_outgroup_alignment
 
 
@@ -158,9 +158,10 @@ def remove_stop_codons (align):
 def getLocusName( record ):
   try:
     # User defined naming rule
+    return record.split('\n')[0].strip("Hmel-1_1_")
   except:
     If this rule fails give it a random name.
-    return "Unknown_locus_" + int( time.time() )
+    return "Unknown_locus_" + str(int( time.time() )
 
 ##################################################
 ### Main body of script
@@ -191,14 +192,16 @@ def main():
     if len (locus) > 0:
       ## Extracting name of locus from file -- THIS DOESN'T SEEM TO WORK (#4)
       
-      #seq_position = getLocusName( n )
+      seq_position = getLocusName( locus )
+      
       seq_lines = locus.split ('\n')
-      seq_name = "".join (seq_lines [0].split ('_') [0])
-      seq_name_stripped = seq_name.strip ('>')
-      if 'HmGr' in seq_lines [0]:
-        seq_position = "_".join(seq_lines[0].split('_')[2:])
-      else:
-        seq_position = "".join(seq_lines[0].split('_')[2:])
+      
+      #seq_name = "".join (seq_lines [0].split ('_') [0])
+      #seq_name_stripped = seq_name.strip ('>')
+      #if 'HmGr' in seq_lines [0]:
+      #  seq_position = "_".join(seq_lines[0].split('_')[2:])
+      #else:
+      #  seq_position = "".join(seq_lines[0].split('_')[2:])
       
       
       # Identifying individuals with large amounts of missing data and 
@@ -244,8 +247,7 @@ def main():
         log(seq_position + ' - Outgroup individuals have insufficient coverage\n')
         continue
       
-      ## Calculate pop gen statistics
-
+      
       # Convert fasta file into egglib object
       try:
         my_alignment1 = egglib.Align(string=locus)
@@ -253,6 +255,8 @@ def main():
         print( "Alignment failed at " + seq_position )
         log(seq_position + " - alignment failed.")
         continue
+      
+      ## Calculate pop gen statistics
       
       ## Assigning population numbers
       a = 0           # a is the population number of melpomene
@@ -323,7 +327,6 @@ def main():
       
       
       ## Calculate statistics for each gene locus
-      
       try:
         # Set minimumExploitableData to 1 so that are including same amount
         # of info in polymorphism and polymorphismBPP
@@ -422,9 +425,7 @@ def main():
                              str(outgroup_PS),
                              str(data_outgrpBPP ['PiNS']),
                              str(data_outgrpBPP['PiS'])) + '\n')
-      
-  
-  #Results_file.close ()
+
 
 #When run from a shell as "python script.py" the function main() is executed
 #When imported from within the python interpreter, all functions are loaded but main() is not run
