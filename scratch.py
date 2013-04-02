@@ -36,6 +36,10 @@ def anyMultiChange( seq1, seq2 ):
   diffs = [ (x!=y) & (x!="N") & (y!="N")  for (x,y) in zip( list(seq1), list(seq2) ) ]
   return sum( [ int(sum(diffs[i:i+3]) > 1) for i in xrange(0,len(seq1),3) ] )
 
+def anyThreeChange( seq1, seq2 ):
+  diffs = [ (x!=y) & (x!="N") & (y!="N")  for (x,y) in zip( list(seq1), list(seq2) ) ]
+  return sum( [ int(sum(diffs[i:i+3]) > 2) for i in xrange(0,len(seq1),3) ] )
+
 def numHet( seq1, seq2 ):
   diffs = [ (x!=y) & (x!="N") & (y!="N")  for (x,y) in zip( list(seq1), list(seq2) ) ]
   return sum( [ int(sum(diffs[i:i+3]) > 0) for i in xrange(0,len(seq1),3) ] )
@@ -53,3 +57,21 @@ with open( inputFile, 'r' ) as fastaFile:
   nHet = sum( [numHet( record[0][1], record[1][1] ) for record in fastaRecords( fastaFile )] )
 
 t3 = time.time()
+with open( inputFile, 'r' ) as fastaFile:
+  nThree = sum( [anyThreeChange( record[0][1], record[1][1] ) for record in fastaRecords( fastaFile )] )
+
+t4 = time.time()
+
+
+def threeChange( seq1, seq2 ):
+  diffs = [ (x!=y) & (x!="N") & (y!="N")  for (x,y) in zip( list(seq1), list(seq2) ) ]
+  for i in xrange(0,len(seq1),3):
+    if int(sum(diffs[i:i+3]) > 2):
+      return i
+
+
+with open( scratch.inputFile, 'r' ) as fastaFile:
+  for record in scratch.fastaRecords( fastaFile ):
+    if threeChange( record[0][1], record[1][1] ):
+      i = threeChange( record[0][1], record[1][1] )
+      print record[0][0], i, len(record[0][1]), record[0][1][i:i+3], record[1][1][i:i+3]
