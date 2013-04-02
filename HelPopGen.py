@@ -55,11 +55,27 @@ def dataRecords():
   for seq in seqs:
     if len(record) == 16:
       yield record
-      record = [(seq.id, seq.seq.upper().tostring())]
+      record = [(seq.id, seq.seq.upper().tostring(), assignGroup(seq))]
     else:
-      record.append((seq.id, seq.seq.upper().tostring()))
+      record.append((seq.id, seq.seq.upper().tostring(), assignGroup(seq)))
   if len(record) == 16:
     yield record
+
+def assignGroup( sequence ):
+  '''
+  Assigns a group to the given sequence. This is either:
+    0:                  ignored
+    999:                outgroup
+    1:                  ingroup
+  '''
+  if seq.id.upper().startswith("ERATO"):
+    return 999
+  elif seq.id.upper().startswith("AMARYLLIS"):
+    return 1
+  elif seq.id.upper().startswith("AGLAOPE"):
+    return 1
+  else:
+    return 0
 
 def phasedData():
   '''
