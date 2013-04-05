@@ -61,14 +61,27 @@ def dataRecords():
   if len(record) == 16:
     yield record
 
-def assignGroup( sequence ):
+def assignGroup( seq ):
   '''
   Assigns a group to the given sequence. This is either:
     0:                  ignored
     999:                outgroup
     1:                  ingroup
   '''
-  if seq.id.upper().startswith("ERATO"):
+  # Ignore all inbred populations
+  if seq.id.upper().startswith("HMEL"):
+    return 0
+  elif seq.id.upper().startswith("AMARYLLIS.1_"):
+    return 0
+  elif seq.id.upper().startswith("AGLAOPE.1_"):
+    return 0
+  # Pardalinus is an alternative outgroup
+  elif seq.id.upper().startswith("PARDALINUS"):
+    return 0
+  # Of the non-inbred populations:
+  #  erato is the outgroup
+  #  amaryllis and aglaope form the ingroup
+  elif seq.id.upper().startswith("ERATO"):
     return 999
   elif seq.id.upper().startswith("AMARYLLIS"):
     return 1
