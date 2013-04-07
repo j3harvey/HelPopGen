@@ -1,6 +1,7 @@
 #! /usr/bin/env python2.7
 
 import Bio.SeqIO
+from Bio.Data import CodonTable
 import csv
 
 inputFile = "ag5am5par1era4_allGenes_StopCodonsRemoved.fasta"
@@ -110,6 +111,22 @@ def qualityControlledData():
       yield record
     else:
       yield qced( record )
+
+def numberChangesBPP( site ):
+  '''
+  A copy of the Bio++ method for counting changes
+  '''
+  Scodon = len( set( site ) ) -1
+  Sbases = len( set( [x[0] for x in site] ) ) +
+           len( set( [x[1] for x in site] ) ) +
+           len( set( [x[2] for x in site] ) ) - 3
+  return max( Scodon, Sbases )
+
+def numberNonSynonymousChangesBPP( site, codonTable=CodonTable.standard_dna_table ):
+  '''
+  A copy of the Bio++ method for counting non-synonymous changes
+  '''
+  return len( set( [codonTable.forward_table[x] for x in site] ) ) - 1
 
 with open( inputFile, 'r' ) as fastaFile:
   for record in dataRecords( fastaFile ):
