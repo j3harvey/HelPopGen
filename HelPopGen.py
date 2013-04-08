@@ -69,26 +69,22 @@ def assignGroup( seq ):
     999:                outgroup
     1:                  ingroup
   '''
-  # Ignore all inbred populations
-  if seq.id.upper().startswith("HMEL"):
+  # Ignore pardalinus (an alternative outgroup)
+  # Also ignore the three inbred individuals.
+  ignored = ["pardalinus", "Hmel", "aglaope.1_", "amaryllis.1_"]
+  # All other amaryllis and aglaope are "in"
+  ingroups = ["amaryllis", "aglaope"]
+  # Erato is the outgroup
+  outgroups = ["erato"]
+  
+  if any( [seq.id.startswith(x) for x in ignored] ):
     return 0
-  elif seq.id.upper().startswith("AMARYLLIS.1_"):
-    return 0
-  elif seq.id.upper().startswith("AGLAOPE.1_"):
-    return 0
-  # Pardalinus is an alternative outgroup
-  elif seq.id.upper().startswith("PARDALINUS"):
-    return 0
-  # Of the non-inbred populations:
-  #  erato is the outgroup
-  #  amaryllis and aglaope form the ingroup
-  elif seq.id.upper().startswith("ERATO"):
+  elif any( [seq.id.startswith(x) for x in ingroups] ):
+    return 1
+  elif any( [seq.id.startswith(x) for x in outgroups] ):
     return 999
-  elif seq.id.upper().startswith("AMARYLLIS"):
-    return 1
-  elif seq.id.upper().startswith("AGLAOPE"):
-    return 1
   else:
+    print "Unable to resolve group: ", seq.id
     return 0
 
 def phasedData():
@@ -112,14 +108,19 @@ def qualityControlledData():
     else:
       yield qced( record )
 
+###
+# 
+# POLYMORPHISM STATISTICS COPIED FROM BPP
+# 
+
 def numberChangesBPP( site ):
   '''
   A copy of the Bio++ method for counting changes
   '''
-  Scodon = len( set( site ) ) -1
-  Sbases = len( set( [x[0] for x in site] ) ) +
-           len( set( [x[1] for x in site] ) ) +
-           len( set( [x[2] for x in site] ) ) - 3
+  Scodon = len(set(site)) - 1
+  Sbases = len(set([x[0] for x in site])) +
+           len(set([x[1] for x in site])) +
+           len(set([x[2] for x in site])) - 3
   return max( Scodon, Sbases )
 
 def numberNonSynonymousChangesBPP( site, codonTable=CodonTable.standard_dna_table ):
@@ -128,9 +129,23 @@ def numberNonSynonymousChangesBPP( site, codonTable=CodonTable.standard_dna_tabl
   '''
   return len( set( [codonTable.forward_table[x] for x in site] ) ) - 1
 
-with open( inputFile, 'r' ) as fastaFile:
-  for record in dataRecords( fastaFile ):
-    qualityControl( record )
-    myAlign = Align( string=str(record) )
-    writeResults( popGenStats( myAlign ) )
+def numberSynonymousChangesBPP( site, codonTable=CodonTable.standard_dna_table ):
+  '''
+  A copy of the Bio++ method for counting non-synonymous changes
+  '''
+  return numberChangesBPP(site) - numberNonSynonymousChangesBPP(site, codonTable)
 
+###
+# 
+# MAIN ROUTINE
+# 
+
+def main():
+  with open( inputFile, 'r' ) as fastaFile:
+    for record in dataRecords( fastaFile ):
+      qualityControl( record )
+      myAlign = Align( string=str(record) )
+      writeResults( popGenStats( myAlign ) )
+
+if __name__ == "__main__":
+  main()
