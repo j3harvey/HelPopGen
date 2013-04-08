@@ -59,6 +59,7 @@ def dataRecords():
       record.append((seq.id, seq.seq.upper().tostring(), assignGroup(seq)))
   if len(record) == 16:
     yield record
+<<<<<<< HEAD
 
 def assignGroup( seq ):
   '''
@@ -85,6 +86,34 @@ def assignGroup( seq ):
     print "Unable to resolve group: ", seq.id
     return 0
 
+=======
+
+def assignGroup( seq ):
+  '''
+  Assigns a group to the given sequence. This is either:
+    0:                  ignored
+    999:                outgroup
+    1:                  ingroup
+  '''
+  # Ignore pardalinus (an alternative outgroup)
+  # Also ignore the three inbred individuals.
+  ignored = ["pardalinus", "Hmel", "aglaope.1_", "amaryllis.1_"]
+  # All other amaryllis and aglaope are "in"
+  ingroups = ["amaryllis", "aglaope"]
+  # Erato is the outgroup
+  outgroups = ["erato"]
+  
+  if any( [seq.id.startswith(x) for x in ignored] ):
+    return 0
+  elif any( [seq.id.startswith(x) for x in ingroups] ):
+    return 1
+  elif any( [seq.id.startswith(x) for x in outgroups] ):
+    return 999
+  else:
+    print "Unable to resolve group: ", seq.id
+    return 0
+
+>>>>>>> 0bbf42d097d938d8ef42d7746225596a6fb6afb0
 def usableSites( record, excludeSites=False ):
   record = [x for x in record if x[2] != 0]
   excluded = list()
@@ -123,6 +152,7 @@ def main(number=float('inf')):
   
   t0 = time.time()
   
+<<<<<<< HEAD
   try:
     ignoreSites = pool.map( lambda x: usableSites(x, True), dataRecords() )
     print time.time() - t0
@@ -148,6 +178,31 @@ def main(number=float('inf')):
   except:
     pool.close()
     pool.join()
+=======
+  ignoreSites = pool.map( lambda x: usableSites(x, True), dataRecords() )
+  print time.time() - t0
+  
+  excludeSeq1 = pool.map( lambda x: usableSites([y for y in x if y[1].count("N")/float(len(x[1])) < 0.1], True), dataRecords() )
+  print time.time() - t0
+  
+  excludeSeq2 = pool.map( lambda x: usableSites([y for y in x if y[1].count("N")/float(len(x[1])) < 0.2], True), dataRecords() )
+  print time.time() - t0
+  
+  excludeSeq3 = pool.map( lambda x: usableSites([y for y in x if y[1].count("N")/float(len(x[1])) < 0.3], True), dataRecords() )
+  print time.time() - t0
+  
+  excludeSeq4 = pool.map( lambda x: usableSites([y for y in x if y[1].count("N")/float(len(x[1])) < 0.4], True), dataRecords() )
+  print time.time() - t0
+  
+  excludeSeq5 = pool.map( lambda x: usableSites([y for y in x if y[1].count("N")/float(len(x[1])) < 0.5], True), dataRecords() )
+  print time.time() - t0
+  
+  meanSeqNums = pool.map( usableSites, dataRecords() )
+  print time.time() - t0
+  
+  pool.close()
+  pool.join()
+>>>>>>> 0bbf42d097d938d8ef42d7746225596a6fb6afb0
   
   return (ignoreSites, 
           excludeSeq1, 
