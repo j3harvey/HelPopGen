@@ -115,7 +115,10 @@ def qualityControlledData():
 
 def numberChangesBPP( site ):
   '''
-  A copy of the Bio++ method for counting changes
+  A copy of the Bio++ method CodonSiteTools::numberOfSubsitutions 
+  from the bpp-seq library. This is used in egglib's MKtable method.
+  
+  I don't get it either.
   '''
   Scodon = len(set(site)) - 1
   Sbases = len(set([x[0] for x in site])) +
@@ -125,13 +128,14 @@ def numberChangesBPP( site ):
 
 def numberNonSynonymousChangesBPP( site, codonTable=CodonTable.standard_dna_table ):
   '''
-  A copy of the Bio++ method for counting non-synonymous changes
+  A copy of the Bio++ method CodonSiteTools::numberOfNonSynonymousSubstitutions
+  for counting non-synonymous changes, used by egglib's MKtable method.
   '''
   return len( set( [codonTable.forward_table[x] for x in site] ) ) - 1
 
 def numberSynonymousChangesBPP( site, codonTable=CodonTable.standard_dna_table ):
   '''
-  A copy of the Bio++ method for counting non-synonymous changes
+  A copy of the Bio++ method for counting synonymous changes
   '''
   return numberChangesBPP(site) - numberNonSynonymousChangesBPP(site, codonTable)
 
