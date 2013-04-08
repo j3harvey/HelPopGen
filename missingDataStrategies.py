@@ -111,9 +111,9 @@ def main(number=float('inf')):
   ignoreSites = list()
   #excludeSeq1 = list()
   #excludeSeq2 = list()
-  excludeSeq3 = list()
+  #excludeSeq3 = list()
   #excludeSeq4 = list()
-  excludeSeq5 = list()
+  #excludeSeq5 = list()
   meanSeqNums = list()
   for record in dataRecords():
     if count >= number:
@@ -128,14 +128,14 @@ def main(number=float('inf')):
       #                               x[1].count("N")/float(len(x[1])) < 0.1], True) )
       #excludeSeq2.append( usableSites([x for x in ioGrp if 
       #                               x[1].count("N")/float(len(x[1])) < 0.2], True) )
-      excludeSeq3.append( usableSites([x for x in ioGrp if 
-                                     x[1].count("N")/float(len(x[1])) < 0.3], True) )
+      #excludeSeq3.append( usableSites([x for x in ioGrp if 
+      #                               x[1].count("N")/float(len(x[1])) < 0.3], True) )
       #excludeSeq4.append( usableSites([x for x in ioGrp if 
       #                               x[1].count("N")/float(len(x[1])) < 0.4], True) )
-      excludeSeq5.append( usableSites([x for x in ioGrp if 
-                                     x[1].count("N")/float(len(x[1])) < 0.5], True) )
+      #excludeSeq5.append( usableSites([x for x in ioGrp if 
+      #                               x[1].count("N")/float(len(x[1])) < 0.5], True) )
       meanSeqNums.append( usableSites(ioGrp) )
-  return (ignoreSites, excludeSeq1, excludeSeq2, excludeSeq3, excludeSeq4, excludeSeq5, meanSeqNums)
+  return (ignoreSites, excludeSeq3, excludeSeq5, meanSeqNums)
 
 
 if __name__ == "__main__":
