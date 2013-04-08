@@ -41,3 +41,6 @@ ag5am5par1era4_outgroup-erato_allGenes_LowFreqThreshold-0_StopCodonsRemoved_RESU
 dmel_hmel_1to1.RAW.out
 dmel_hmel_1to1.REFORMAT.out
 ag5am5era4_allGenes_ambig.fasta
+
+# Ignore junk
+junk*

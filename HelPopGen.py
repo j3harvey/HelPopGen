@@ -98,6 +98,19 @@ def phasedData():
     else:
       yield phased( record )
 
+'''
+If some individuals are missing for a site, then I would either 
+
+  (i)   exclude the site
+  (ii)  subsample the number of individuals for that whole allele 
+        (such that, say, 6/8 alleles were available for a given gene), or 
+  (iii) use an “average number of alleles” for that gene (e.g., 7.8 alleles).
+
+(iii) is clearly a bodge, but it can be used.
+I wouldn’t use the frequency spectrum for this purpose as it is certain 
+to vary between sites and loci, and I think (iii) is a preferable hack.
+'''
+
 def qualityControlledData():
   '''
   Takes sequence records as input and yields only high quality data.
