@@ -85,8 +85,11 @@ def assignGroup( seq ):
     print "Unable to resolve group: ", seq.id
     return 0
 
-def usableSites( record, excludeSites=False ):
-  record = [x for x in record if x[2] != 0]
+def usableSitesStar( args ):
+  return usableSites( *args )
+
+def usableSites( record, excludeSites=False, thres=1.0 ):
+  record = [x for x in record if x[2] != 0 and x[1].count("N")/float(len(x[1]))<thres]
   excluded = list()
   if excludeSites == True:
     for x in record:
@@ -106,23 +109,27 @@ def main(number=float('inf')):
   
   t0 = time.time()
   
+  def gen( excludeSites=False, thres=1.0 ):
+    for x in dataRecords():
+      yield (x, excludeSites, thres )
+  
   try:
-    ignoreSites = pool.map( lambda x: usableSites(x, True), dataRecords() )
+    ignoreSites = pool.map( usableSitesStar, gen(True))
     print time.time() - t0
     
-    excludeSeq1 = pool.map( lambda x: usableSites([y for y in x if y[1].count("N")/float(len(x[1])) < 0.1], True), dataRecords() )
+    excludeSeq1 = pool.map( usableSitesStar, gen(True,0.1) )
     print time.time() - t0
     
-    excludeSeq2 = pool.map( lambda x: usableSites([y for y in x if y[1].count("N")/float(len(x[1])) < 0.2], True), dataRecords() )
+    excludeSeq2 = pool.map( usableSitesStar, gen(True,0.2) )
     print time.time() - t0
     
-    excludeSeq3 = pool.map( lambda x: usableSites([y for y in x if y[1].count("N")/float(len(x[1])) < 0.3], True), dataRecords() )
+    excludeSeq3 = pool.map( usableSitesStar, gen(True,0.3) )
     print time.time() - t0
     
-    excludeSeq4 = pool.map( lambda x: usableSites([y for y in x if y[1].count("N")/float(len(x[1])) < 0.4], True), dataRecords() )
+    excludeSeq4 = pool.map( usableSitesStar, gen(True,0.4) )
     print time.time() - t0
     
-    excludeSeq5 = pool.map( lambda x: usableSites([y for y in x if y[1].count("N")/float(len(x[1])) < 0.5], True), dataRecords() )
+    excludeSeq5 = pool.map( usableSitesStar, gen(True,0.5) )
     print time.time() - t0
     
     meanSeqNums = pool.map( usableSites, dataRecords() )
