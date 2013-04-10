@@ -3,6 +3,7 @@
 import Bio.SeqIO
 from Bio.Data import CodonTable
 import csv
+from collections import Counter
 
 inputFile = "ag5am5par1era4_allGenes_StopCodonsRemoved.fasta"
 
@@ -104,10 +105,10 @@ If some individuals are missing for a site, then I would either
   (i)   exclude the site
   (ii)  subsample the number of individuals for that whole allele 
         (such that, say, 6/8 alleles were available for a given gene), or 
-  (iii) use an “average number of alleles” for that gene (e.g., 7.8 alleles).
+  (iii) use an "average number of alleles" for that gene (e.g., 7.8 alleles).
 
 (iii) is clearly a bodge, but it can be used.
-I wouldn’t use the frequency spectrum for this purpose as it is certain 
+I wouldn't use the frequency spectrum for this purpose as it is certain 
 to vary between sites and loci, and I think (iii) is a preferable hack.
 '''
 
@@ -134,9 +135,9 @@ def numberChangesBPP( site ):
   I don't get it either.
   '''
   Scodon = len(set(site)) - 1
-  Sbases = len(set([x[0] for x in site])) +
-           len(set([x[1] for x in site])) +
-           len(set([x[2] for x in site])) - 3
+  Sbases = (len(set([x[0] for x in site])) +
+            len(set([x[1] for x in site])) +
+            len(set([x[2] for x in site])) - 3)
   return max( Scodon, Sbases )
 
 def numberNonSynonymousChangesBPP( site, codonTable=CodonTable.standard_dna_table ):
@@ -152,6 +153,20 @@ def numberSynonymousChangesBPP( site, codonTable=CodonTable.standard_dna_table )
   A copy of the Bio++ method for counting synonymous changes
   '''
   return numberChangesBPP(site) - numberNonSynonymousChangesBPP(site, codonTable)
+
+def meanNumSynPos( site, codonTable=CodonTable.standard_dna_table ):
+  if any([(x in site) for x in codonTable.stop_codons]):
+    return 0
+  if any([("N" in x) for x in site]):
+    return 0
+  freqs = Counter(site)
+  return float(sum( [freqs[c]*numSynPos(c,codonTable) for c in freqs.keys()] )/len(site))
+
+def numNonSynPos( c, codonTable=CodonTable.standard_dna_table ):
+  return sum([sum([codonTable.forward_table[''.join([c[j] if j!=i else base for j in [0,1,2]])] != codonTable.forward_table[c] for base in "ACTG"]) for i in [0,1,2]])
+
+def numSynPos( c, codonTable=CodonTable.standard_dna_table ):
+  return 9 - numNonSynPos(c,codonTable)
 
 ###
 # 
