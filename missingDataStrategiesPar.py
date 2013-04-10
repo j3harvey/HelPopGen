@@ -110,20 +110,20 @@ def main(number=float('inf')):
     ignoreSites = pool.map( lambda x: usableSites(x, True), dataRecords() )
     print time.time() - t0
     
-    excludeSeq1 = pool.map( lambda x: usableSites([y for y in x if y[1].count("N")/float(len(x[1])) < 0.1], True), dataRecords() )
-    print time.time() - t0
+    #excludeSeq1 = pool.map( lambda x: usableSites([y for y in x if y[1].count("N")/float(len(x[1])) < 0.1], True), dataRecords() )
+    #print time.time() - t0
     
-    excludeSeq2 = pool.map( lambda x: usableSites([y for y in x if y[1].count("N")/float(len(x[1])) < 0.2], True), dataRecords() )
-    print time.time() - t0
+    #excludeSeq2 = pool.map( lambda x: usableSites([y for y in x if y[1].count("N")/float(len(x[1])) < 0.2], True), dataRecords() )
+    #print time.time() - t0
     
-    excludeSeq3 = pool.map( lambda x: usableSites([y for y in x if y[1].count("N")/float(len(x[1])) < 0.3], True), dataRecords() )
-    print time.time() - t0
+    #excludeSeq3 = pool.map( lambda x: usableSites([y for y in x if y[1].count("N")/float(len(x[1])) < 0.3], True), dataRecords() )
+    #print time.time() - t0
     
-    excludeSeq4 = pool.map( lambda x: usableSites([y for y in x if y[1].count("N")/float(len(x[1])) < 0.4], True), dataRecords() )
-    print time.time() - t0
+    #excludeSeq4 = pool.map( lambda x: usableSites([y for y in x if y[1].count("N")/float(len(x[1])) < 0.4], True), dataRecords() )
+    #print time.time() - t0
     
-    excludeSeq5 = pool.map( lambda x: usableSites([y for y in x if y[1].count("N")/float(len(x[1])) < 0.5], True), dataRecords() )
-    print time.time() - t0
+    #excludeSeq5 = pool.map( lambda x: usableSites([y for y in x if y[1].count("N")/float(len(x[1])) < 0.5], True), dataRecords() )
+    #print time.time() - t0
     
     meanSeqNums = pool.map( usableSites, dataRecords() )
     print time.time() - t0
@@ -134,11 +134,11 @@ def main(number=float('inf')):
     raise
   
   return (ignoreSites, 
-          excludeSeq1, 
-          excludeSeq2, 
-          excludeSeq3, 
-          excludeSeq4, 
-          excludeSeq5, 
+          #excludeSeq1, 
+          #excludeSeq2, 
+          #excludeSeq3, 
+          #excludeSeq4, 
+          #excludeSeq5, 
           meanSeqNums)
 
 if __name__ == "__main__":
