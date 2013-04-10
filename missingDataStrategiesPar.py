@@ -85,8 +85,12 @@ def assignGroup( seq ):
     print "Unable to resolve group: ", seq.id
     return 0
 
-def usableSites( record, excludeSites=False ):
-  record = [x for x in record if x[2] != 0]
+def usableSitesStar( args ):
+  return usableSites( *args )
+
+'''
+def usableSites( record, excludeSites=False, thres=1.0 ):
+  record = [x for x in record if x[2] != 0 and x[1].count("N")/float(len(x[1]))<thres]
   excluded = list()
   if excludeSites == True:
     for x in record:
@@ -100,47 +104,53 @@ def usableSites( record, excludeSites=False ):
         if x[1][i:i+3] not in ["TGA", "TAA", "TAG"] and "N" not in x[1][i:i+3]:
           count += 1
   return count
+'''
+
+def usableSites(record, excludeSites=False, thres=1.0):
+  record = [x for x in record if x[2] != 0 and x[1].count("N")/float(len(x[1])) < thres]
+  ns = len(record)
+  count = 0
+  if ns > 0:
+    for i in range(0,len(record[0][1]),3):
+      if excludeSites:
+        if all( [(x[1][i:i+3] not in ["TGA","TAG","TAA"] and "N" not in x[1][i:i+3]) for x in record]):
+          count += ns
+      else:
+        for x in record:
+          if x[1][i:i+3] not in ["TGA", "TAG", "TAA"] and "N" not in x[1][i:i+3]:
+            count += 1
+  return count
 
 def main(number=float('inf')):
   pool = Pool()
   
   t0 = time.time()
   
-  try:
-    ignoreSites = pool.map( lambda x: usableSites(x, True), dataRecords() )
+  def gen( excludeSites=False, thres=1.0 ):
+    #for x in dataRecords():
+    #  yield (x, excludeSites, thres )
+    return [(x,excludeSites,thres) for x in dataRecords()]
+  
+  def countSites( thres ):
+    x = pool.map( usableSitesStar, gen(True,thres))
     print time.time() - t0
-    
-    #excludeSeq1 = pool.map( lambda x: usableSites([y for y in x if y[1].count("N")/float(len(x[1])) < 0.1], True), dataRecords() )
-    #print time.time() - t0
-    
-    #excludeSeq2 = pool.map( lambda x: usableSites([y for y in x if y[1].count("N")/float(len(x[1])) < 0.2], True), dataRecords() )
-    #print time.time() - t0
-    
-    #excludeSeq3 = pool.map( lambda x: usableSites([y for y in x if y[1].count("N")/float(len(x[1])) < 0.3], True), dataRecords() )
-    #print time.time() - t0
-    
-    #excludeSeq4 = pool.map( lambda x: usableSites([y for y in x if y[1].count("N")/float(len(x[1])) < 0.4], True), dataRecords() )
-    #print time.time() - t0
-    
-    #excludeSeq5 = pool.map( lambda x: usableSites([y for y in x if y[1].count("N")/float(len(x[1])) < 0.5], True), dataRecords() )
-    #print time.time() - t0
-    
+    return x
+
+  try:
+    excludeSeqs = [countSites( thres ) for thres in [1.0, 0.9, 0.8, 0.7, 0.6, 0.4, 0.3, 0.2, 0.1] ]
     meanSeqNums = pool.map( usableSites, dataRecords() )
     print time.time() - t0
-  
   except:
     pool.close()
     pool.join()
     raise
-  
-  return (ignoreSites, 
-          #excludeSeq1, 
-          #excludeSeq2, 
-          #excludeSeq3, 
-          #excludeSeq4, 
-          #excludeSeq5, 
-          meanSeqNums)
+  return excludeSeqs + [meanSeqNums]
 
 if __name__ == "__main__":
-  x = main()
-  print [sum(y) for y in x]
+  results = main()
+  print [sum(y) for y in results]
+  with open("results2.csv", 'abw') as f:
+    fwriter = csv.writer(f)
+    for i in range(len(results[0])):
+      fwriter.writerow( [results[j][i] for j in range(len(results))] )
+

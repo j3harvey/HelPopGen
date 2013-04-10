@@ -144,7 +144,8 @@ def numberNonSynonymousChangesBPP( site, codonTable=CodonTable.standard_dna_tabl
   A copy of the Bio++ method CodonSiteTools::numberOfNonSynonymousSubstitutions
   for counting non-synonymous changes, used by egglib's MKtable method.
   '''
-  return len( set( [codonTable.forward_table[x] for x in site] ) ) - 1
+  return len( set( [codonTable.forward_table[x] for x in site 
+                                    if x in codonTable.forward_table.keys()] ) ) - 1
 
 def numberSynonymousChangesBPP( site, codonTable=CodonTable.standard_dna_table ):
   '''
@@ -159,10 +160,8 @@ def numberSynonymousChangesBPP( site, codonTable=CodonTable.standard_dna_table )
 
 def main():
   with open( inputFile, 'r' ) as fastaFile:
-    for record in dataRecords( fastaFile ):
-      qualityControl( record )
-      myAlign = Align( string=str(record) )
-      writeResults( popGenStats( myAlign ) )
+    records = [record for record in dataRecords()]
 
 if __name__ == "__main__":
   main()
+
