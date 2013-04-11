@@ -68,7 +68,7 @@ def assignGroup( seq ):
   Assigns a group to the given sequence. This is either:
     0:                  ignored
     999:                outgroup
-    1:                  ingroup
+    1,2,3...:           ingroups
   '''
   # Ignore pardalinus (an alternative outgroup)
   # Also ignore the three inbred individuals.
@@ -167,6 +167,24 @@ def numNonSynPos( c, codonTable=CodonTable.standard_dna_table ):
 
 def numSynPos( c, codonTable=CodonTable.standard_dna_table ):
   return 9 - numNonSynPos(c,codonTable)
+
+def numDiv( record ):
+  ls = len(record[0][1])
+  groups = set( x[2] for x in record )
+  if len(groups) < 2:
+    return 0
+  return sum([len(set(zip([x[1][i:i+3] for x in record], x[2] for x in record]))) == len(groups) for in range(0,ls,3)])
+
+def numNonSynDiv( record, codonTable=CodonTable.standard_dna_table ):
+  ls = len(record[0][1])
+  groups = set( x[2] for x in record )
+  if len(groups) < 2:
+    return 0
+  codonGroupPairs = [ set( zip( [x[2] for x in record], x[1][i:i+3] for x in record] ) ) for i in range(0,ls,3) ]
+  return sum( [ (len(x) == len(groups) and len(set([y[1] for y in x])) != 1) for x in codonGroupPairs ] )
+
+def numSynDiv( record, codonTable=CodonTable.standard_dna_table ):
+  return numDiv(record) - numNonSynDiv(record, codonTable)
 
 ###
 # 
