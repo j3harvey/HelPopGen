@@ -7,7 +7,7 @@ from itertools import product, chain
 from collections import Counter
 
 INPUT_FILE = "ag5am5par1era4_allGenes_StopCodonsRemoved.fasta"
-OUTPUT_FILE = INPUT_FILE.strip(".fasta") + ".csv"
+OUTPUT_FILE = INPUT_FILE.rstrip(".fasta") + ".csv"
 
 # Set to True if data is already phased, otherwise set to False
 dataIsPhased = True
@@ -15,6 +15,36 @@ dataIsPhased = True
 trtv = {transitions:   [("A","G"),("C","T"),("G","A"),("T","C")],
         transversions: [("A","C"),("A","T"),("C","A"),("C","G"),("G","C"),("G","T"),("T","A"),("T","G")],
        }
+
+class Align:
+  '''
+  The main data class.
+
+  Acts like a list of aligned sequences.
+  '''
+  def __init__(self,ids,seqs,groups,description=None):
+    self.ids = ids
+    self.seqs = seqs
+    self.groups = groups
+    self.desc = description
+    self.ns = len(ids)
+    self.ls = len(seqs[0])
+  def __iter__(self):
+    return iter(zip(self.ids, self.seqs, self.groups))
+  def sites(self):
+    return [[x[i:i+3] for x in self.seqs] for i in range(0,self.ls,3)]
+  def __getsites__(self,*args):
+    return Align(self.ids, [''.join(x) for x in zip(*self.sites()[args[0]])], self.groups, self.desc)
+  def __getitem__(self, *args):
+    if len(args) > 2:
+      raise KeyError
+    if type(args[0]) in (int, slice):
+      return self.seqs[args[0]]
+    elif args[0][0] == slice(None,None,None):
+      return self.__getsites__(args[0][1])
+    else:
+      s, t = args[0]
+      return Align(self.ids[s], self.seqs[s], self.groups[s],self.desc).__getsites__(t)
 
 def dataRecords():
   '''
