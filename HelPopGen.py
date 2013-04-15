@@ -20,7 +20,7 @@ class Align:
   '''
   The main data class.
 
-  Acts like a list of aligned sequences.
+  Acts like a list of aligned sequences, or a 2-dimensional array of codons.
   '''
   def __init__(self,ids,seqs,groups,description=None):
     self.ids = ids
@@ -36,8 +36,8 @@ class Align:
   def __getsites__(self,*args):
     return Align(self.ids, [''.join(x) for x in zip(*self.sites()[args[0]])], self.groups, self.desc)
   def __getitem__(self, *args):
-    if len(args) > 2:
-      raise KeyError
+    if len(args[0]) > 2:
+      raise IndexError("Align indices must be of length 1 or 2")
     if type(args[0]) in (int, slice):
       return self.seqs[args[0]]
     elif args[0][0] == slice(None,None,None):
