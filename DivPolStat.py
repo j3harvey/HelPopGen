@@ -10,7 +10,7 @@ from collections import Counter
 # POLYMORPHISM STATISTICS COPIED FROM BPP
 # 
 
-def numberChangesBPP( site ):
+def numberChangesAtSiteBPP( site ):
   '''
   A copy of the Bio++ method CodonSiteTools::numberOfSubsitutions 
   from the bpp-seq library. This is used in egglib's MKtable method.
@@ -23,7 +23,7 @@ def numberChangesBPP( site ):
             len(set([x[2] for x in site])) - 3)
   return max( Scodon, Sbases )
 
-def numberNonSynonymousChangesBPP( site, codonTable=CodonTable.standard_dna_table ):
+def numberNonSynonymousChangesAtSiteBPP( site, codonTable=CodonTable.standard_dna_table ):
   '''
   A copy of the Bio++ method CodonSiteTools::numberOfNonSynonymousSubstitutions
   for counting non-synonymous changes, used by egglib's MKtable method.
@@ -31,13 +31,38 @@ def numberNonSynonymousChangesBPP( site, codonTable=CodonTable.standard_dna_tabl
   return len( set( [codonTable.forward_table[x] for x in site 
                                     if x in codonTable.forward_table.keys()] ) ) - 1
 
-def numberSynonymousChangesBPP( site, codonTable=CodonTable.standard_dna_table ):
+def numberSynonymousChangesAtSiteBPP( site, codonTable=CodonTable.standard_dna_table ):
   '''
   A copy of the Bio++ method for counting synonymous changes
   '''
-  return numberChangesBPP(site) - numberNonSynonymousChangesBPP(site, codonTable)
+  return numberChangesAtSiteBPP(site) - numberNonSynonymousChangesAtSiteBPP(site, codonTable)
 
-def meanNumSynPos( site, codonTable=CodonTable.standard_dna_table ):
+def numberChangesBPP( record ):
+  ls = len(record[0][1])
+  return sum( [numberChangesAtSiteBPP(site) for site in [[x[1][i:i+3] for x in record] for i in range(0,ls,3)]] )
+
+def numberSynonymousChangesBPP( record, codonTable=CodonTable.standard_dna_table ):
+  ls = len(record[0][1])
+  return sum( [numberSynonymousChangesAtSiteBPP(site) for site in [[x[1][i:i+3] for x in record] for i in range(0,ls,3)]] )
+
+def numberNonSynonymousChangesBPP( record, codonTable=CodonTable.standard_dna_table ):
+  ls = len(record[0][1])
+  return sum( [numberNonSynonymousChangesAtSiteBPP(site) for site in [[x[1][i:i+3] for x in record] for i in range(0,ls,3)]] )
+
+###
+# 
+# MUTATIONAL OPPORTTUNITY STATISTICS
+# 
+
+def meanNumNonSynPos( record, codonTable=CodonTable.standard_dna_table ):
+  if any([(x in site) for x in codonTable.stop_codons]):
+    return 0
+  if any([("N" in x) for x in site]):
+    return 0
+  freqs = Counter(site)
+  return float(sum( [freqs[c]*numNonSynPos(c,codonTable) for c in freqs.keys()] )/len(site))
+
+def meanNumSynPos( record, codonTable=CodonTable.standard_dna_table ):
   if any([(x in site) for x in codonTable.stop_codons]):
     return 0
   if any([("N" in x) for x in site]):
@@ -51,9 +76,14 @@ def numNonSynPos( c, codonTable=CodonTable.standard_dna_table ):
 def numSynPos( c, codonTable=CodonTable.standard_dna_table ):
   return 9 - numNonSynPos(c,codonTable)
 
+###
+# 
+# DIVERGENCE STATISTICS
+# 
+
 def numDiv( record ):
   ls = len(record[0][1])
-  groups = set( x[2] for x in record )
+  groups = set( [x[2] for x in record] )
   if len(groups) < 2:
     return 0
   return sum([len(set(zip([x[1][i:i+3] for x in record], x[2] for x in record]))) == len(groups) for in range(0,ls,3)])
