@@ -18,7 +18,7 @@ trtv = {transitions:   [("A","G"),("C","T"),("G","A"),("T","C")],
 
 class Align:
   '''
-  The main data class.
+  The main data class for HelPopGen.
 
   Acts like a list of aligned sequences, or a 2-dimensional array of codons.
   '''
@@ -37,9 +37,19 @@ class Align:
     return Align(self.ids, [''.join(x) for x in zip(*self.sites()[args[0]])], self.groups, self.desc)
   def __getitem__(self, *args):
     if len(args[0]) > 2:
-      raise IndexError("Align indices must be of length 1 or 2")
+      raise TypeError("Align indices must be of length 1 or 2")
     if type(args[0]) in (int, slice):
       return self.seqs[args[0]]
+    elif args[0][0] == slice(None,None,None):
+      return self.__getsites__(args[0][1])
+    else:
+      s, t = args[0]
+      return Align(self.ids[s], self.seqs[s], self.groups[s],self.desc).__getsites__(t)
+  def __setitem__(self,key, value):
+    if len(args[0]) > 2:
+      raise TypeError("Align indices must be of length 1 or 2")
+    if type(args[0]) == int:
+      return self.seqs.__setitem__(key, value)
     elif args[0][0] == slice(None,None,None):
       return self.__getsites__(args[0][1])
     else:
