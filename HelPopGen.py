@@ -5,6 +5,7 @@ from Bio.Data import CodonTable
 import csv
 from itertools import product, chain
 from collections import Counter
+import DivPolStat
 
 INPUT_FILE = "ag5am5par1era4_allGenes_StopCodonsRemoved.fasta"
 OUTPUT_FILE = INPUT_FILE.rstrip(".fasta") + ".csv"
@@ -12,8 +13,8 @@ OUTPUT_FILE = INPUT_FILE.rstrip(".fasta") + ".csv"
 # Set to True if data is already phased, otherwise set to False
 dataIsPhased = True
 
-trtv = {transitions:   [("A","G"),("C","T"),("G","A"),("T","C")],
-        transversions: [("A","C"),("A","T"),("C","A"),("C","G"),("G","C"),("G","T"),("T","A"),("T","G")],
+trtv = {"transitions":   [("A","G"),("C","T"),("G","A"),("T","C")],
+        "transversions": [("A","C"),("A","T"),("C","A"),("C","G"),("G","C"),("G","T"),("T","A"),("T","G")],
        }
 
 class Align:
@@ -74,12 +75,12 @@ def dataRecords():
   record = []
   for seq in seqs:
     if len(record) == 16:
-      yield record
+      yield [x for x in record if x[2] != 0]
       record = [(seq.id, seq.seq.upper().tostring(), assignGroup(seq))]
     else:
       record.append((seq.id, seq.seq.upper().tostring(), assignGroup(seq)))
   if len(record) == 16:
-    yield record
+    yield [x for x in record if x[2] != 0]
 
 def assignGroup( seq ):
   '''
@@ -136,19 +137,21 @@ def phased( site ):
     numAmbig =  sum( [b in ambiguousBases.keys() for b in c] )
     if numAmbig == 0:
       newSite.extend([c]*2)
-    if numAmbig == 1:
+    elif numAmbig == 1:
       # Simple phasing  e.g. "ATK" --> "ATG" and "ATT"
       newSite.extend( map( lambda z: ''.join(z),
                               product(*[ambiguousBases.get(x,x) for x in c]) ) )
-    if numAmbig == 2:
+    elif numAmbig == 2:
       # Harder phasing  e.g. "KKT" --> ("GGT" and "TTT") or ("GTT" and "TGT")
       # This is yet to be implemented
+      newSite.extend(['NNN','NNN'])
       continue
     else:
       # No phasing  e.g. "KYK" --> 4 possible genotypes
       # Give up, unless one possible phasing of the data matches other sequences 
       # at that site. This might be implemented later, but for now we throw out 
       # the small number of sites where this applies.
+      newSite.extend(['NNN','NNN'])
       continue
   return newSite
 
@@ -190,17 +193,17 @@ def qualityCheck(record):
   At present, this method only checks that there is more than one sequence in
   each group, so that we can detect polymorphism and divergence.
   '''
-  groups = collections.Counter([x[2] for x in record])
+  groups = Counter([x[2] for x in record])
   # If there are too few 'in' or 'out' sequences to detect polymorphism, return False
-  if (len(groups[1]) < 2) or (len(groups[999]) < 2):
+  if (groups[1] < 2) or (groups[999] < 2):
     return False
   else:
     return True
 
 def polDivStats( record ):
   return { "name"                   : record[0][0],
-           "ingroup_sequences"      : len( [x[2]==1 for x in record] ),
-           "outgroup_sequences"     : len( [x[2]==999 for x in record] ),
+           "ingroup_sequences"      : sum( [x[2]==1 for x in record] ),
+           "outgroup_sequences"     : sum( [x[2]==999 for x in record] ),
            "sequence_length"        : len( record[0][1] ),
            "usable_sequence_length" : 3*usableSites(record),
            "Ssites"                 : DivPolStat.meanNumSynPos(record),
@@ -239,10 +242,12 @@ def main():
   '''
   records        = (record               for record in dataRecords())
   phased_records = (phased(record)       for record in records)
-  no_stops       = (stopsRemoved(record) for record in phased_records)
+  #no_stops       = (stopsRemoved(record) for record in phased_records)
   usable_data    = (missingData(record)  for record in phased_records)
-  results        = (polDivStats(record)  for record in usable data if qualityCheck(record))
+  results        = (polDivStats(record)  for record in usable_data if qualityCheck(record))
 
+  #for line in results:
+  #  print '\t'.join([str(x) for x in line.values()])
   with open( OUTPUT_FILE, 'w' ) as f:
     resultsWriter = csv.DictWriter( open(OUTPUT_FILE,'w') )
     resultsWriter.writerows(results)
