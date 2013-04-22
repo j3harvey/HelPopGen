@@ -3,19 +3,14 @@
 import Bio.SeqIO
 from Bio.Data import CodonTable
 import csv
+import sys
 from itertools import product, chain
 from collections import Counter
 import DivPolStat
 
-INPUT_FILE = "ag5am5par1era4_allGenes_StopCodonsRemoved.fasta"
-OUTPUT_FILE = INPUT_FILE.rstrip(".fasta") + ".csv"
-
-# Set to True if data is already phased, otherwise set to False
-dataIsPhased = True
-
-trtv = {"transitions":   [("A","G"),("C","T"),("G","A"),("T","C")],
-        "transversions": [("A","C"),("A","T"),("C","A"),("C","G"),("G","C"),("G","T"),("T","A"),("T","G")],
-       }
+THRESHOLD = 0.1
+INPUT_FILE = "ag5am5era4_allGenes_ambig.fasta"
+OUTPUT_FILE = INPUT_FILE.rstrip(".fasta") + str(THRESHOLD) + ".csv"
 
 class Align:
   '''
@@ -116,7 +111,7 @@ def phaseRecord(record):
   newIds    = chain( *[[x[0],x[0]] for x in record] )
   newGroups = chain( *[[x[2],x[2]] for x in record] )
   # Perform phasing at each site in the alignment and form a new alignment of the phased sequences
-  ls        = len(record[0][1])
+  ls        = len(record[0][1]) - len(record[0][1]) % 3
   sites     = [[x[1][i:i+3] for x in record] for i in range(0,ls,3)]
   newSeqs   = [''.join(newSeq) for newSeq in zip( *[phased(site) for site in sites] ) ]
   # Return a new record of phased data, i.e. a list of tuples:
@@ -145,14 +140,12 @@ def phased( site ):
       # Harder phasing  e.g. "KKT" --> ("GGT" and "TTT") or ("GTT" and "TGT")
       # This is yet to be implemented
       newSite.extend(['NNN','NNN'])
-      continue
     else:
       # No phasing  e.g. "KYK" --> 4 possible genotypes
       # Give up, unless one possible phasing of the data matches other sequences 
       # at that site. This might be implemented later, but for now we throw out 
       # the small number of sites where this applies.
       newSite.extend(['NNN','NNN'])
-      continue
   return newSite
 
 '''
@@ -200,12 +193,39 @@ def qualityCheck(record):
   else:
     return True
 
+def removeMinorAlleles(record, threshold):
+  '''
+  For each site in the record, alleles with a frequency less than or equal to 
+  threshold are repalced with the major allele at that site.
+  '''
+  ids = [x[0] for x in record]
+  groups = [x[2] for x in record]
+  ls = len(record[0][1]) - len(record[0][1]) % 3
+  sites     = [[x[1][i:i+3] for x in record] for i in range(0,ls,3)]
+  newSeqs = [''.join(newSeq) for newSeq in zip( *[removeMinorCodons(site,threshold) for site in sites] ) ]
+  return zip(ids, newSeqs, groups)
+
+def removeMinorCodons(site,threshold):
+  counts = Counter(site)
+  codons = [c for c in site if c not in ['TAA','TAG','TGA'] and 'N' not in c]
+  if len(codons) == 0:
+    # Site has only stops and/or codons with missing data.
+    return site
+  majorAllele = max(set(codons), key=site.count)
+  newSite = list()
+  for c in site:
+    if c in codons and site.count(c)/float(len(codons)) < threshold:
+      newSite.append(majorAllele)
+    else:
+      newSite.append(c)
+  return newSite
+
 def polDivStats( record ):
   return { "name"                   : record[0][0],
            "ingroup_sequences"      : sum( [x[2]==1 for x in record] ),
            "outgroup_sequences"     : sum( [x[2]==999 for x in record] ),
            "sequence_length"        : len( record[0][1] ),
-           "usable_sequence_length" : 3*usableSites(record),
+           "usable_sequence_length" : 3*usableSites(record)/float(len(record)),
            "Ssites"                 : DivPolStat.meanNumSynPos(record),
            "NSsites"                : DivPolStat.meanNumNonSynPos(record),
            "P_N"                    : DivPolStat.numNonSynPol(record),
@@ -240,17 +260,48 @@ def main():
         ii)  Number of polymorphic sites
         iii) Number of divergent sites
   '''
+  
+  '''
+  # Genome-wide estimate of Transition:Transversion (tr:tv) ratio
+  tr = 0
+  tv = 0
+  for r in dataRecords():
+    for i in range(len(r[0][1])):
+      bases = Counter([x[1][i] for x in r]).keys()
+      if 'A' in bases and 'G' in bases:
+        tr += 1
+      if 'C' in bases and 'T' in bases:
+        tr += 1
+      if ('A' in bases or 'G' in bases) and ('C' in bases or 'T' in bases):
+        tv += 1
+  # Result: tr = 575644,  tv = 266020
+  '''
+
   records        = (record               for record in dataRecords())
-  phased_records = (phased(record)       for record in records)
+  phased_records = (phaseRecord(record)  for record in records)
   #no_stops       = (stopsRemoved(record) for record in phased_records)
-  usable_data    = (missingData(record)  for record in phased_records)
+  major_alleles  = (removeMinorAlleles(record, THRESHOLD) for record in phased_records)
+  usable_data    = (missingData(record)  for record in major_alleles)
   results        = (polDivStats(record)  for record in usable_data if qualityCheck(record))
 
   #for line in results:
   #  print '\t'.join([str(x) for x in line.values()])
   with open( OUTPUT_FILE, 'w' ) as f:
-    resultsWriter = csv.DictWriter( open(OUTPUT_FILE,'w') )
-    resultsWriter.writerows(results)
+    fieldNames = ["name",
+                  "ingroup_sequences",
+                  "outgroup_sequences",
+                  "sequence_length",
+                  "usable_sequence_length",
+                  "Ssites",
+                  "NSsites",
+                  "P_N",
+                  "P_S",
+                  "D_N",
+                  "D_S",]
+    resultsWriter = csv.DictWriter( sys.stdout, fieldNames )
+    resultsWriter.writerow( {k:k for k in fieldNames} )
+    for line in results:
+      resultsWriter.writerow(line)
 
 if __name__ == "__main__":
   main()

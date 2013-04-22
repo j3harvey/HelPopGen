@@ -79,18 +79,10 @@ def siteMeanNumSynPos( site, codonTable=CodonTable.standard_dna_table ):
   return sum( [freqs[c]*numSynPos(c,codonTable) for c in freqs.keys()] )/float(len(site))
 
 def numNonSynPos( c, codonTable=CodonTable.standard_dna_table ):
-  try:
-    return sum([sum([codonTable.forward_table.get(''.join([c[j] if j!=i else base for j in [0,1,2]]),c) != codonTable.forward_table[c] for base in "ACTG"]) for i in [0,1,2]])
-  except:
-    print c
-    raise
+  return sum([sum([codonTable.forward_table.get(''.join([c[j] if j!=i else base for j in [0,1,2]]),c) != codonTable.forward_table[c] for base in "ACTG"]) for i in [0,1,2]])
 
 def numSynPos( c, codonTable=CodonTable.standard_dna_table ):
-  try:
-    return 9 - numNonSynPos(c,codonTable)
-  except:
-    print c
-    raise
+  return 9 - numNonSynPos(c,codonTable)
 
 ###
 # 

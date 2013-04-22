@@ -45,3 +45,6 @@ all_orthomcl.out.parsed
 
 # Ignore junk
 junk*
+
+# Ignore .csv results files.
+*.csv
