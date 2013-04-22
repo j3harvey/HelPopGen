@@ -8,9 +8,9 @@ from itertools import product, chain
 from collections import Counter
 import DivPolStat
 
-THRESHOLD = 0.1
+#THRESHOLD = 0.1
 INPUT_FILE = "ag5am5era4_allGenes_ambig.fasta"
-OUTPUT_FILE = INPUT_FILE.rstrip(".fasta") + str(THRESHOLD) + ".csv"
+#OUTPUT_FILE = INPUT_FILE.rstrip(".fasta") + str(THRESHOLD) + ".csv"
 
 class Align:
   '''
@@ -198,12 +198,16 @@ def removeMinorAlleles(record, threshold):
   For each site in the record, alleles with a frequency less than or equal to 
   threshold are repalced with the major allele at that site.
   '''
-  ids = [x[0] for x in record]
-  groups = [x[2] for x in record]
   ls = len(record[0][1]) - len(record[0][1]) % 3
-  sites     = [[x[1][i:i+3] for x in record] for i in range(0,ls,3)]
-  newSeqs = [''.join(newSeq) for newSeq in zip( *[removeMinorCodons(site,threshold) for site in sites] ) ]
-  return zip(ids, newSeqs, groups)
+  inSeqs   = [x for x in record if x[2] == 1]
+  outSeqs  = [x for x in record if x[2] == 999]
+  inSites  = [[x[1][i:i+3] for x in inSeqs] for i in range(0,ls,3)]
+  outSites = [[x[1][i:i+3] for x in outSeqs] for i in range(0,ls,3)]
+  newIn    = [''.join(newSeq) for newSeq in zip( *[removeMinorCodons(site,threshold) for site in inSites] ) ]
+  newOut   = [''.join(newSeq) for newSeq in zip( *[removeMinorCodons(site,threshold) for site in outSites] ) ]
+  ids      = [x[0] for x in inSeqs] + [x[0] for x in outSeqs]
+  groups   = [x[2] for x in inSeqs] + [x[2] for x in outSeqs]
+  return zip(ids, newIn + newOut, groups)
 
 def removeMinorCodons(site,threshold):
   counts = Counter(site)
@@ -277,31 +281,36 @@ def main():
   # Result: tr = 575644,  tv = 266020
   '''
 
-  records        = (record               for record in dataRecords())
-  phased_records = (phaseRecord(record)  for record in records)
-  #no_stops       = (stopsRemoved(record) for record in phased_records)
-  major_alleles  = (removeMinorAlleles(record, THRESHOLD) for record in phased_records)
-  usable_data    = (missingData(record)  for record in major_alleles)
-  results        = (polDivStats(record)  for record in usable_data if qualityCheck(record))
-
-  #for line in results:
-  #  print '\t'.join([str(x) for x in line.values()])
-  with open( OUTPUT_FILE, 'w' ) as f:
-    fieldNames = ["name",
-                  "ingroup_sequences",
-                  "outgroup_sequences",
-                  "sequence_length",
-                  "usable_sequence_length",
-                  "Ssites",
-                  "NSsites",
-                  "P_N",
-                  "P_S",
-                  "D_N",
-                  "D_S",]
-    resultsWriter = csv.DictWriter( sys.stdout, fieldNames )
-    resultsWriter.writerow( {k:k for k in fieldNames} )
-    for line in results:
-      resultsWriter.writerow(line)
+  for t in [0.0, 1.0/25, 2.0/25, 3.0/25, 4.0/25, 5.0/25, 6.0/25, 7.0/25, 8.0/25, 9.0/25, 10.0/25]:
+    THRESHOLD = t
+    OUTPUT_FILE = INPUT_FILE.rstrip(".fasta") + str(THRESHOLD) + ".csv"
+  
+  
+    records        = (record               for record in dataRecords())
+    phased_records = (phaseRecord(record)  for record in records)
+    #no_stops       = (stopsRemoved(record) for record in phased_records)
+    major_alleles  = (removeMinorAlleles(record, THRESHOLD) for record in phased_records)
+    usable_data    = (missingData(record)  for record in major_alleles)
+    results        = (polDivStats(record)  for record in usable_data if qualityCheck(record))
+    
+    #for line in results:
+    #  print '\t'.join([str(x) for x in line.values()])
+    with open( OUTPUT_FILE, 'w' ) as f:
+      fieldNames = ["name",
+                    "ingroup_sequences",
+                    "outgroup_sequences",
+                    "sequence_length",
+                    "usable_sequence_length",
+                    "Ssites",
+                    "NSsites",
+                    "P_N",
+                    "P_S",
+                    "D_N",
+                    "D_S",]
+      resultsWriter = csv.DictWriter( open(OUTPUT_FILE, 'w'), fieldNames )
+      resultsWriter.writerow( {k:k for k in fieldNames} )
+      for line in results:
+        resultsWriter.writerow(line)
 
 if __name__ == "__main__":
   main()
