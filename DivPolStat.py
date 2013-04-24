@@ -89,23 +89,27 @@ def numSynPos( c, codonTable=CodonTable.standard_dna_table ):
 # DIVERGENCE STATISTICS
 # 
 
-def numDiv( record ):
+def numDiv( record, codonTable=CodonTable.standard_dna_table ):
   ls = len(record[0][1]) - len(record[0][1]) % 3
-  groups = set( [x[2] for x in record] )
-  if len(groups) < 2:
+  groups = [x[2] for x in record]
+  if len(set(groups)) < 2:
+    # Record has only one group or is empty
     return 0
-  return sum([len(set(zip([x[1][i:i+3] for x in record], [x[2] for x in record]))) == len(groups) for i in range(0,ls,3)])
+  sites = [[x[1][i:i+3] for x in record] for i in range(0,ls,3)]
+  divS  = 0 # Synonymous divergence
+  divNS = 0 # Non-synonymous divergence
+  for s in sites:
+    if any([c in codonTable.stop_codons for c in s]) or any(['N' in c for c in s]):
+      continue
+    divS  += countMutations(s, codonTable)[1]
+    divNS += countMutations(s, codonTable)[0]
+  return {'S':divS, 'NS': divNS}
 
 def numNonSynDiv( record, codonTable=CodonTable.standard_dna_table ):
-  ls = len(record[0][1]) - len(record[0][1]) % 3
-  groups = set( x[2] for x in record )
-  if len(groups) < 2:
-    return 0
-  codonGroupPairs = [ set( zip( [x[2] for x in record], [x[1][i:i+3] for x in record] ) ) for i in range(0,ls,3) ]
-  return sum( [ (len(x) == len(groups) and len(set([y[1] for y in x])) != 1) for x in codonGroupPairs ] )
+  return numDiv(record,codonTable)['NS']
 
 def numSynDiv( record, codonTable=CodonTable.standard_dna_table ):
-  return numDiv(record) - numNonSynDiv(record, codonTable)
+  return numDiv(record,codonTable)['S']
 
 ###
 # 

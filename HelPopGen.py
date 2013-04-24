@@ -1,5 +1,16 @@
 #! /usr/bin/env python2.7
 
+'''
+Parse arguments before doing anything else.
+
+This avoids lengthy imports when all you want is
+the 'usage' information './HelPolGen.py --help'
+'''
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("threshold", help="Minor allele frequency cutoff", nargs='?', type=float, default=0.0)
+args = parser.parse_args()
+
 import Bio.SeqIO
 from Bio.Data import CodonTable
 import csv
@@ -7,10 +18,6 @@ import sys
 from itertools import product, chain
 from collections import Counter
 import DivPolStat
-
-#THRESHOLD = 0.1
-INPUT_FILE = "ag5am5era4_allGenes_ambig.fasta"
-#OUTPUT_FILE = INPUT_FILE.rstrip(".fasta") + str(THRESHOLD) + ".csv"
 
 class Align:
   '''
@@ -87,11 +94,11 @@ def assignGroup( seq ):
   '''
   # Ignore pardalinus (an alternative outgroup)
   # Also ignore the three inbred individuals.
-  ignored = ["pardalinus", "Hmel", "aglaope.1_", "amaryllis.1_"]
+  ignored = ["erato", "pardalinus", "Hmel", "aglaope.1_", "amaryllis.1_"]
   # All other amaryllis and aglaope are "in"
-  ingroups = ["amaryllis", "aglaope"]
+  ingroups = ["amaryllis"]
   # Erato is the outgroup
-  outgroups = ["erato"]
+  outgroups = ["aglaope"]
   
   if any( [seq.id.startswith(x) for x in ignored] ):
     return 0
@@ -280,38 +287,34 @@ def main():
         tv += 1
   # Result: tr = 575644,  tv = 266020
   '''
-
-  for t in [0.0, 1.0/25, 2.0/25, 3.0/25, 4.0/25, 5.0/25, 6.0/25, 7.0/25, 8.0/25, 9.0/25, 10.0/25]:
-    THRESHOLD = t
-    OUTPUT_FILE = INPUT_FILE.rstrip(".fasta") + str(THRESHOLD) + ".csv"
   
+  records        = (record               for record in dataRecords())
+  phased_records = (phaseRecord(record)  for record in records)
+  #no_stops       = (stopsRemoved(record) for record in phased_records)
+  major_alleles  = (removeMinorAlleles(record, THRESHOLD) for record in phased_records)
+  usable_data    = (missingData(record)  for record in major_alleles)
+  results        = (polDivStats(record)  for record in usable_data if qualityCheck(record))
   
-    records        = (record               for record in dataRecords())
-    phased_records = (phaseRecord(record)  for record in records)
-    #no_stops       = (stopsRemoved(record) for record in phased_records)
-    major_alleles  = (removeMinorAlleles(record, THRESHOLD) for record in phased_records)
-    usable_data    = (missingData(record)  for record in major_alleles)
-    results        = (polDivStats(record)  for record in usable_data if qualityCheck(record))
-    
-    #for line in results:
-    #  print '\t'.join([str(x) for x in line.values()])
-    with open( OUTPUT_FILE, 'w' ) as f:
-      fieldNames = ["name",
-                    "ingroup_sequences",
-                    "outgroup_sequences",
-                    "sequence_length",
-                    "usable_sequence_length",
-                    "Ssites",
-                    "NSsites",
-                    "P_N",
-                    "P_S",
-                    "D_N",
-                    "D_S",]
-      resultsWriter = csv.DictWriter( open(OUTPUT_FILE, 'w'), fieldNames )
-      resultsWriter.writerow( {k:k for k in fieldNames} )
-      for line in results:
-        resultsWriter.writerow(line)
+  #for line in results:
+  #  print '\t'.join([str(x) for x in line.values()])
+  fieldNames = ["name",
+                "ingroup_sequences",
+                "outgroup_sequences",
+                "sequence_length",
+                "usable_sequence_length",
+                "Ssites",
+                "NSsites",
+                "P_N",
+                "P_S",
+                "D_N",
+                "D_S",]
+  resultsWriter = csv.DictWriter( sys.stdout, fieldNames )
+  resultsWriter.writerow( {k:k for k in fieldNames} )
+  for line in results:
+    resultsWriter.writerow(line)
 
 if __name__ == "__main__":
+  THRESHOLD = args.threshold
+  INPUT_FILE = "ag5am5era4_allGenes_ambig.fasta"
   main()
 
