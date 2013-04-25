@@ -21,23 +21,36 @@ import DivPolStat
 
 class Align:
   '''
-  The main data class for HelPopGen.
+  A list of aligned sequences with group assignations.
 
   Acts like a list of aligned sequences, or a 2-dimensional array of codons.
+
   '''
-  def __init__(self,ids,seqs,groups,description=None):
-    self.ids = ids
+
+  def __init__(self,ids,seqs,name='',groups=None,description=None):
+    self.name = name
+    self.ids = [str(i) for i in ids]
     self.seqs = seqs
-    self.groups = groups
     self.desc = description
     self.ns = len(ids)
+    if groups == None:
+      groups = [0 for i in range(ns)]
+    else:
+      self.groups = groups
     self.ls = len(seqs[0])
+
   def __iter__(self):
     return iter(zip(self.ids, self.seqs, self.groups))
+
+  def __len__(self):
+    return self.ns
+
   def sites(self):
-    return [[x[i:i+3] for x in self.seqs] for i in range(0,self.ls,3)]
+    return [[x[i:i+3] for x in self.seqs] for i in range(0,self.ls - self.ls % 3,3)]
+
   def __getsites__(self,*args):
     return Align(self.ids, [''.join(x) for x in zip(*self.sites()[args[0]])], self.groups, self.desc)
+
   def __getitem__(self, *args):
     if type(args[0]) == tuple and len(args[0]) > 2:
       raise IndexError("Too many indices")
@@ -48,6 +61,7 @@ class Align:
     else:
       s, t = args[0]
       return Align(self.ids[s], self.seqs[s], self.groups[s],self.desc).__getsites__(t)
+
   def __setitem__(self, key, value):
     if type(key) == tuple and len(args[0]) > 2:
       raise IndexError("Too many indices")
