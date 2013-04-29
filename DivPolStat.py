@@ -8,49 +8,6 @@ import itertools
 
 ###
 # 
-# POLYMORPHISM STATISTICS COPIED FROM BPP
-# 
-
-def numberChangesAtSiteBPP( site ):
-  '''
-  A copy of the Bio++ method CodonSiteTools::numberOfSubsitutions 
-  from the bpp-seq library. This is used in egglib's MKtable method.
-  
-  I don't get it either.
-  '''
-  Scodon = len(set(site)) - 1
-  Sbases = (len(set([x[0] for x in site])) +
-            len(set([x[1] for x in site])) +
-            len(set([x[2] for x in site])) - 3)
-  return max( Scodon, Sbases )
-
-def numberNonSynonymousChangesAtSiteBPP( site, codonTable=CodonTable.standard_dna_table ):
-  '''
-  A copy of the Bio++ method CodonSiteTools::numberOfNonSynonymousSubstitutions
-  for counting non-synonymous changes, used by egglib's MKtable method.
-  '''
-  return len( set( [codonTable.forward_table.get(x) for x in site ] ) ) - 1
-
-def numberSynonymousChangesAtSiteBPP( site, codonTable=CodonTable.standard_dna_table ):
-  '''
-  A copy of the Bio++ method for counting synonymous changes
-  '''
-  return numberChangesAtSiteBPP(site) - numberNonSynonymousChangesAtSiteBPP(site, codonTable)
-
-def numberChangesBPP( record ):
-  ls = len(record[0][1]) - len(record[0][1]) % 3
-  return sum( [numberChangesAtSiteBPP(site) for site in [[x[1][i:i+3] for x in record] for i in range(0,ls,3)]] )
-
-def numberSynonymousChangesBPP( record, codonTable=CodonTable.standard_dna_table ):
-  ls = len(record[0][1]) - len(record[0][1]) % 3
-  return sum( [numberSynonymousChangesAtSiteBPP(site) for site in [[x[1][i:i+3] for x in record] for i in range(0,ls,3)]] )
-
-def numberNonSynonymousChangesBPP( record, codonTable=CodonTable.standard_dna_table ):
-  ls = len(record[0][1]) - len(record[0][1]) % 3
-  return sum( [numberNonSynonymousChangesAtSiteBPP(site) for site in [[x[1][i:i+3] for x in record] for i in range(0,ls,3)]] )
-
-###
-# 
 # MUTATIONAL OPPORTTUNITY STATISTICS
 # 
 

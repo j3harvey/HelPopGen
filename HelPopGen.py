@@ -5,12 +5,15 @@ Parse arguments before doing anything else.
 
 This avoids lengthy imports when all you want is
 the 'usage' information './HelPolGen.py --help'
+
 '''
 import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("threshold", help="Minor allele frequency cutoff", nargs='?', type=float, default=0.0)
 args = parser.parse_args()
-
+THRESHOLD = args.threshold
+INPUT_FILE = "ag5am5era4_allGenes_ambig.fasta"
+  
 import Bio.SeqIO
 from Bio.Data import CodonTable
 import csv
@@ -21,20 +24,22 @@ import DivPolStat
 
 class Align:
   '''
-  A list of aligned sequences with group assignations.
-
-  Acts like a list of aligned sequences, or a 2-dimensional array of codons.
-
+  A list of aligned sequences with IDs and group assignations.
+  
+  Acts like a list of aligned sequences, or a 2-dimensional array of bases.
+  
   '''
 
-  def __init__(self,ids,seqs,name='',groups=None,description=None):
+  def __init__(self, ids, seqs, name='', groups=None, description=None):
+    if len(ids) != len(seqs):
+      raise ValueError("Length of ids must match length of seqs")
     self.name = name
     self.ids = [str(i) for i in ids]
     self.seqs = seqs
     self.desc = description
     self.ns = len(ids)
     if groups == None:
-      groups = [0 for i in range(ns)]
+      groups = [1 for i in range(ns)]
     else:
       self.groups = groups
     self.ls = len(seqs[0])
@@ -48,33 +53,39 @@ class Align:
   def sites(self):
     return [[x[i:i+3] for x in self.seqs] for i in range(0,self.ls - self.ls % 3,3)]
 
-  def __getsites__(self,*args):
-    return Align(self.ids, [''.join(x) for x in zip(*self.sites()[args[0]])], self.groups, self.desc)
-
   def __getitem__(self, *args):
     if type(args[0]) == tuple and len(args[0]) > 2:
       raise IndexError("Too many indices")
     if type(args[0]) in (int, slice):
       return self.seqs[args[0]]
-    elif args[0][0] == slice(None,None,None):
-      return self.__getsites__(args[0][1])
     else:
-      s, t = args[0]
-      return Align(self.ids[s], self.seqs[s], self.groups[s],self.desc).__getsites__(t)
-
+      sSlice, bSlice = slice(args[0][0]), slice(args[0][1])
+      newSeqs = [''.join(list(s)[bSlice]) for s in list(self.seqs[sSlice])]
+      return Align(self.ids[sSlice], newSeqs, self.name, self.groups[sSlice], self.desc)
+  
   def __setitem__(self, key, value):
-    if type(key) == tuple and len(args[0]) > 2:
+    if type(key) == tuple and len(key) > 2:
       raise IndexError("Too many indices")
     if type(key) in (int, slice):
-      return self.seqs.__setitem__(key, value)
-    elif key[0] == slice(None,None,None):
-      return self.__setsites__(key[1])
+      self.seqs.__setitem__(key, value)
     else:
-      s, t = args[0]
-      return Align(self.ids[s], self.seqs[s], self.groups[s],self.desc).__getsites__(t)
+      sSlice, bSlice = slice(args[0][0]), slice(args[0][1])
+      if len(value) != len(range(ns)[sSlice]):
+        raise ValueError("Length of value must equal the number of sequences to be changed.")
+      try:
+        newSeqs = self.seqs
+        for j in range(ns)[sSlice]:
+          s = list(newSeqs[j])
+          s.__setitem__(bSlice, list(value.next()))
+          newSeqs[j] = ''.join(s)
+      except:
+        raise
+      else:
+        self.seqs = newSeqs
 
 def dataRecords():
-  '''
+  '''A generator of aligned sequences for each locus in the data set.
+  
   This generator yields lists of (name,sequence) tuples
   e.g. [(name1,seq1,group1),(name2,seq2,group2),...]
   
@@ -82,6 +93,7 @@ def dataRecords():
   caulculation of divergence and/or polymorphism statistics.
   
   This method should be modified by the user to correctly read their own data!
+  
   '''
   # We just load the entire fasta file and split records into groups of 16.
   # Your data may be arranged differently!
@@ -99,12 +111,21 @@ def dataRecords():
     yield [x for x in record if x[2] != 0]
 
 def assignGroup( seq ):
-  '''
+  '''Assigns a group number to a sequence object.
+  
   Assigns a group number to seq, an object of class Bio.SeqRecord.SeqRecord.
   The group number is one of:
     0:                  ignored
     999:                outgroup
     1,2,3...:           ingroups
+  
+  Sequences with group number 0 are not used for any population genetic
+  statistics. Sequences with group number 999 are excluded from the
+  calculation of certain statistics. Other groups are used in all 
+  calculations.
+  
+  You will have to write a custom method to suit your own data.
+  
   '''
   # Ignore pardalinus (an alternative outgroup)
   # Also ignore the three inbred individuals.
@@ -125,9 +146,7 @@ def assignGroup( seq ):
     return 0
 
 def phaseRecord(record):
-  '''
-  Takes a record as input and yields a record of phased data.
-  '''
+  '''Takes a record as input and yields a record of phased data.'''
   # Repeat each id and group twice
   newIds    = chain( *[[x[0],x[0]] for x in record] )
   newGroups = chain( *[[x[2],x[2]] for x in record] )
@@ -147,6 +166,7 @@ ambiguousBases = {"K": ["G","T"],
                   "Y": ["C","T"],}
 
 def phased( site ):
+  '''Takes a site (list of N codons) and outputs a phased version of that site (2N codons)'''
   newSite = list()
   for c in site:
     # For each codon in the site, count how many ambiguous bases are present
@@ -169,26 +189,31 @@ def phased( site ):
       newSite.extend(['NNN','NNN'])
   return newSite
 
-'''
-If some individuals are missing for a site, then I would either 
-
-  (i)   exclude the site
-  (ii)  subsample the number of individuals for that whole allele 
-        (such that, say, 6/8 alleles were available for a given gene), or 
-  (iii) use an "average number of alleles" for that gene (e.g., 7.8 alleles).
-
-(iii) is clearly a bodge, but it can be used.
-I wouldn't use the frequency spectrum for this purpose as it is certain 
-to vary between sites and loci, and I think (iii) is a preferable hack.
-'''
-
 def missingData(record):
+  '''Returns a subset of a record with maximum usable data.
+  
+  missingData chooses a theshold t and removes all sequences with a proportion t or greater
+  of data missing. Site with missing data are those that contain N's or stop codons.
+  
+  A range of values of t are tested, and a best value t* is chosen based on the total number
+  of usable codons i.e. (number of sites with no missing data)*(number of sequences).
+  
+  The return value is a record with all sequences with proportion >t* missing data removed.
+  
+  '''
   thresholds = [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
   counts     = [usableSites(record, t) for t in thresholds]
   thres      = max( [t for (t,c) in zip(thresholds,counts) if c == max(counts)] )
   return [x for x in record if x[2] != 0 and x[1].count("N")/float(len(x[1])) < thres]
 
 def usableSites(record, thres=1.0):
+  '''Calculates the amount of usable data in a record
+  
+  The amount of usable data in a record is defined as the number of sequences multiplied
+  by the number of sites (aligned codons) with no N's and no stop codons, calculated
+  after all sequences with a proportion >thres missing data are reomved.
+  
+  '''
   record = [x for x in record if x[2] != 0 and x[1].count("N")/float(len(x[1])) < thres]
   ns = len(record)
   count = 0
@@ -199,13 +224,15 @@ def usableSites(record, thres=1.0):
   return count
 
 def qualityCheck(record):
-  '''
+  '''Checks that a record is suitable for calculation of polymorphism  and divergence statistics.
+  
   Takes a record (a list of aligned sequences, with their identifiers and group
   numbers) as input. Returns 'True' if the data is suitable for calculation of
   polymorphism and divergence statistics, and 'False' otherwise.
-
+  
   At present, this method only checks that there is more than one sequence in
   each group, so that we can detect polymorphism and divergence.
+  
   '''
   groups = Counter([x[2] for x in record])
   # If there are too few 'in' or 'out' sequences to detect polymorphism, return False
@@ -215,9 +242,11 @@ def qualityCheck(record):
     return True
 
 def removeMinorAlleles(record, threshold):
-  '''
+  '''Replaces rare alleles with the major allele at each site in a record.
+  
   For each site in the record, alleles with a frequency less than or equal to 
   threshold are repalced with the major allele at that site.
+  
   '''
   ls = len(record[0][1]) - len(record[0][1]) % 3
   inSeqs   = [x for x in record if x[2] == 1]
@@ -231,6 +260,7 @@ def removeMinorAlleles(record, threshold):
   return zip(ids, newIn + newOut, groups)
 
 def removeMinorCodons(site,threshold):
+  '''Replaces rare alleles with the major allele at a given site'''
   counts = Counter(site)
   codons = [c for c in site if c not in ['TAA','TAG','TGA'] and 'N' not in c]
   if len(codons) == 0:
@@ -246,6 +276,7 @@ def removeMinorCodons(site,threshold):
   return newSite
 
 def polDivStats( record ):
+  '''Calculates a dictionary of population statistics for a set of aligned sequences'''
   return { "name"                   : record[0][0],
            "ingroup_sequences"      : sum( [x[2]==1 for x in record] ),
            "outgroup_sequences"     : sum( [x[2]==999 for x in record] ),
@@ -265,9 +296,10 @@ def polDivStats( record ):
 # 
 
 def main():
-  '''
+  '''Calculate statistics for each set of aligned sequences in the input file.
+  
   The main routine runs as follows:
-
+  
   1) Load unphased data in an object 'records'
   2) Remove sequences with group number 0 (i.e. all 'ignored' sequences)
   3) Attempt to phase the data using the 'phased' function. Insert 'N's whenever phasing fails.
@@ -284,6 +316,7 @@ def main():
         i)   Number of synonymous and non-synonymous sites
         ii)  Number of polymorphic sites
         iii) Number of divergent sites
+  
   '''
   
   '''
@@ -309,8 +342,6 @@ def main():
   usable_data    = (missingData(record)  for record in major_alleles)
   results        = (polDivStats(record)  for record in usable_data if qualityCheck(record))
   
-  #for line in results:
-  #  print '\t'.join([str(x) for x in line.values()])
   fieldNames = ["name",
                 "ingroup_sequences",
                 "outgroup_sequences",
@@ -328,7 +359,5 @@ def main():
     resultsWriter.writerow(line)
 
 if __name__ == "__main__":
-  THRESHOLD = args.threshold
-  INPUT_FILE = "ag5am5era4_allGenes_ambig.fasta"
   main()
 
