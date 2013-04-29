@@ -6,6 +6,72 @@ import csv
 from collections import Counter
 import itertools
 
+
+###
+# 
+# HELPER FUNCTIONS AND CONSTANTS
+# 
+
+'''
+D is a dictionary of distances between codons.
+
+For codons c and c, D[(c,d)] is a tuple:
+the first element is the number of non-synonymous mutations needed to change
+c to d, and the second element if the number of synonymous mutations needed.
+'''
+D = dict()
+FT=CodonTable.standard_dna_table.forward_table
+for c in FT.keys():
+  for i in range(3):
+    for b in "ACGT":
+      d = ''.join([c[j] if j != i else b for j in range(3)])
+      if d == c:
+        D[(c,d)] = (0,0)
+      elif d not in FT.keys():
+        continue #D[(c,d)] = float('Inf')
+      else:
+        D[(c,d)] = (0,1) if FT[c] == FT[d] else (1,0)
+for c1 in FT.keys():
+  for c2 in FT.keys():
+    nequal = sum([c1[i] != c2[i] for i in range(3)])
+    if nequal < 2:
+      continue
+    elif nequal == 2:
+      D[(c1,c2)] = min( [(D[(c1,d)][0] + D[(d,c2)][0], D[(c1,d)][1] + D[(d,c2)][1]) for d in FT.keys() if (c1,d) in D.keys() and (d,c2) in D.keys()] )
+    else:
+      continue
+for c1 in FT.keys():
+  for c2 in FT.keys():
+    nequal = sum([c1[i] != c2[i] for i in range(3)])
+    if nequal == 3:
+      D[(c1,c2)] = min( [(D[(c1,d)][0] + D[(d,c2)][0], D[(c1,d)][1] + D[(d,c2)][1]) for d in FT.keys() if (c1,d) in D.keys() and (d,c2) in D.keys()] )
+
+def countMutations(site, ct=CodonTable.standard_dna_table):
+  '''
+  Uses a heuristic method (Kruskal's algorithm to find a set of mutations 
+  that can explain the polymorphism observed at the site.
+
+  The return value is a tuple: the first element is the number of
+  non-synonymous mutations, and the second element is the number of
+  sysnonymous mutations.
+
+  This is an example of a Steiner Tree Problem, which is know to be
+  NP-hard.
+  '''
+  E = set( [tuple(sorted((c,d))) for c in site for d in site if d != c] )
+  E = sorted(E, key=lambda e: D[e])
+  T = list()
+  sets = { c : set([c,]) for c in site }
+  if len(E) == 0:
+    return (0,0)
+  for (u,v) in E:
+    if sets[u] != sets[v]:
+      for (key,val) in sets.items():
+        if u in val or v in val:
+          sets[key] = sets[u] | sets[v]
+      T.append((u,v))
+  return (sum( [D[e][0] for e in set([tuple(sorted(t)) for t in T])] ), sum( [D[e][1] for e in set([tuple(sorted(t)) for t in T])] ))
+
 ###
 # 
 # MUTATIONAL OPPORTTUNITY STATISTICS
@@ -94,63 +160,4 @@ def siteNumSynPol(site, groups, codonTable):
 def siteNumNonSynPol(site, groups, codonTable):
   return sum( [countMutations( [c for (c,g) in zip(site,groups) if g == h], codonTable )[0] for h in Counter(groups).keys()] )
 
-def countMutations(site, ct=CodonTable.standard_dna_table):
-  '''
-  Uses a heuristic method (Kruskal's algorithm to find a set of mutations 
-  that can explain the polymorphism observed at the site.
-
-  The return value is a tuple: the first element is the number of
-  non-synonymous mutations, and the second element is the number of
-  sysnonymous mutations.
-
-  This is an example of a Steiner Tree Problem, which is know to be
-  NP-hard.
-  '''
-  E = set( [tuple(sorted((c,d))) for c in site for d in site if d != c] )
-  E = sorted(E, key=lambda e: D[e])
-  T = list()
-  sets = { c : set([c,]) for c in site }
-  if len(E) == 0:
-    return (0,0)
-  for (u,v) in E:
-    if sets[u] != sets[v]:
-      for (key,val) in sets.items():
-        if u in val or v in val:
-          sets[key] = sets[u] | sets[v]
-      T.append((u,v))
-  return (sum( [D[e][0] for e in set([tuple(sorted(t)) for t in T])] ), sum( [D[e][1] for e in set([tuple(sorted(t)) for t in T])] ))
-
-'''
-D is a dictionary of distances between codons.
-
-For codons c and c, D[(c,d)] is a tuple:
-the first element is the number of non-synonymous mutations needed to change
-c to d, and the second element if the number of synonymous mutations needed.
-'''
-D = dict()
-FT=CodonTable.standard_dna_table.forward_table
-for c in FT.keys():
-  for i in range(3):
-    for b in "ACGT":
-      d = ''.join([c[j] if j != i else b for j in range(3)])
-      if d == c:
-        D[(c,d)] = (0,0)
-      elif d not in FT.keys():
-        continue #D[(c,d)] = float('Inf')
-      else:
-        D[(c,d)] = (0,1) if FT[c] == FT[d] else (1,0)
-for c1 in FT.keys():
-  for c2 in FT.keys():
-    nequal = sum([c1[i] != c2[i] for i in range(3)])
-    if nequal < 2:
-      continue
-    elif nequal == 2:
-      D[(c1,c2)] = min( [(D[(c1,d)][0] + D[(d,c2)][0], D[(c1,d)][1] + D[(d,c2)][1]) for d in FT.keys() if (c1,d) in D.keys() and (d,c2) in D.keys()] )
-    else:
-      continue
-for c1 in FT.keys():
-  for c2 in FT.keys():
-    nequal = sum([c1[i] != c2[i] for i in range(3)])
-    if nequal == 3:
-      D[(c1,c2)] = min( [(D[(c1,d)][0] + D[(d,c2)][0], D[(c1,d)][1] + D[(d,c2)][1]) for d in FT.keys() if (c1,d) in D.keys() and (d,c2) in D.keys()] )
 

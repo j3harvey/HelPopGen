@@ -38,14 +38,15 @@ class Align:
     self.seqs = seqs
     self.desc = description
     self.ns = len(ids)
-    if groups == None:
-      groups = [1 for i in range(ns)]
+    if groups is None:
+      self.groups = [1 for i in range(ns)]
     else:
       self.groups = groups
     self.ls = len(seqs[0])
 
   def __iter__(self):
-    return iter(zip(self.ids, self.seqs, self.groups))
+    for x in zip(self.ids, self.seqs, self.groups):
+      yield x
 
   def __len__(self):
     return self.ns
@@ -53,10 +54,16 @@ class Align:
   def sites(self):
     return [[x[i:i+3] for x in self.seqs] for i in range(0,self.ls - self.ls % 3,3)]
 
+  def group(self, *args):
+    ids  = [self.ids[i] for i in range(self.ns) if self.groups[i] in args]
+    gps  = [self.groups[i] for i in range(self.ns) if self.groups[i] in args]
+    seqs = [self.seqs[i] for i in range(self.ns) if self.groups[i] in args]
+    return Align(ids, seqs, name=self.name, groups=gps, descriptions=self.desc)
+
   def __getitem__(self, *args):
     if type(args[0]) == tuple and len(args[0]) > 2:
       raise IndexError("Too many indices")
-    if type(args[0]) in (int, slice):
+    if isinstance(args[0], int) or isinstance(args[0], slice):
       return self.seqs[args[0]]
     else:
       sSlice, bSlice = slice(args[0][0]), slice(args[0][1])
@@ -66,7 +73,7 @@ class Align:
   def __setitem__(self, key, value):
     if type(key) == tuple and len(key) > 2:
       raise IndexError("Too many indices")
-    if type(key) in (int, slice):
+    if isinstance(key, int) or isinstance(kay, slice):
       self.seqs.__setitem__(key, value)
     else:
       sSlice, bSlice = slice(args[0][0]), slice(args[0][1])
@@ -99,7 +106,7 @@ def dataRecords():
   # Your data may be arranged differently!
   # If so, you will have to implement your own function below or rearrange
   # your data.
-  seqs = Bio.SeqIO.parse( INPUT_FILE, 'fasta' )
+  seqs = Bio.SeqIO.parse(INPUT_FILE, 'fasta')
   record = []
   for seq in seqs:
     if len(record) == 16:
@@ -135,11 +142,11 @@ def assignGroup( seq ):
   # Erato is the outgroup
   outgroups = ["erato"]
   
-  if any( [seq.id.startswith(x) for x in ignored] ):
+  if any([seq.id.startswith(x) for x in ignored]):
     return 0
-  elif any( [seq.id.startswith(x) for x in ingroups] ):
+  elif any([seq.id.startswith(x) for x in ingroups]):
     return 1
-  elif any( [seq.id.startswith(x) for x in outgroups] ):
+  elif any([seq.id.startswith(x) for x in outgroups]):
     return 999
   else:
     #print("Unable to resolve group: ", seq.id)
@@ -148,12 +155,12 @@ def assignGroup( seq ):
 def phaseRecord(record):
   '''Takes a record as input and yields a record of phased data.'''
   # Repeat each id and group twice
-  newIds    = chain( *[[x[0],x[0]] for x in record] )
-  newGroups = chain( *[[x[2],x[2]] for x in record] )
+  newIds    = chain(*[[x[0],x[0]] for x in record])
+  newGroups = chain(*[[x[2],x[2]] for x in record])
   # Perform phasing at each site in the alignment and form a new alignment of the phased sequences
   ls        = len(record[0][1]) - len(record[0][1]) % 3
   sites     = [[x[1][i:i+3] for x in record] for i in range(0,ls,3)]
-  newSeqs   = [''.join(newSeq) for newSeq in zip( *[phased(site) for site in sites] ) ]
+  newSeqs   = [''.join(newSeq) for newSeq in zip( *[phased(site) for site in sites])]
   # Return a new record of phased data, i.e. a list of tuples:
   # [(id1,seq1a,group1), (id1,seq1b,group1), (id1,seq2a,group2),...]
   return zip( newIds, newSeqs, newGroups )
@@ -170,13 +177,13 @@ def phased( site ):
   newSite = list()
   for c in site:
     # For each codon in the site, count how many ambiguous bases are present
-    numAmbig =  sum( [b in ambiguousBases.keys() for b in c] )
+    numAmbig =  sum([b in ambiguousBases.keys() for b in c])
     if numAmbig == 0:
       newSite.extend([c]*2)
     elif numAmbig == 1:
       # Simple phasing  e.g. "ATK" --> "ATG" and "ATT"
-      newSite.extend( map( lambda z: ''.join(z),
-                              product(*[ambiguousBases.get(x,x) for x in c]) ) )
+      newSite.extend(map(lambda z: ''.join(z),
+                              product(*[ambiguousBases.get(x,x) for x in c])))
     elif numAmbig == 2:
       # Harder phasing  e.g. "KKT" --> ("GGT" and "TTT") or ("GTT" and "TGT")
       # This is yet to be implemented
@@ -203,7 +210,7 @@ def missingData(record):
   '''
   thresholds = [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
   counts     = [usableSites(record, t) for t in thresholds]
-  thres      = max( [t for (t,c) in zip(thresholds,counts) if c == max(counts)] )
+  thres      = max([t for (t,c) in zip(thresholds,counts) if c == max(counts)])
   return [x for x in record if x[2] != 0 and x[1].count("N")/float(len(x[1])) < thres]
 
 def usableSites(record, thres=1.0):
@@ -219,7 +226,7 @@ def usableSites(record, thres=1.0):
   count = 0
   if ns > 0:
     for i in range(0,len(record[0][1]),3):
-      if all( [(x[1][i:i+3] not in ["TGA","TAG","TAA"] and "N" not in x[1][i:i+3]) for x in record]):
+      if all([(x[1][i:i+3] not in ["TGA","TAG","TAA"] and "N" not in x[1][i:i+3]) for x in record]):
         count += ns
   return count
 
@@ -253,8 +260,8 @@ def removeMinorAlleles(record, threshold):
   outSeqs  = [x for x in record if x[2] == 999]
   inSites  = [[x[1][i:i+3] for x in inSeqs] for i in range(0,ls,3)]
   outSites = [[x[1][i:i+3] for x in outSeqs] for i in range(0,ls,3)]
-  newIn    = [''.join(newSeq) for newSeq in zip( *[removeMinorCodons(site,threshold) for site in inSites] ) ]
-  newOut   = [''.join(newSeq) for newSeq in zip( *[removeMinorCodons(site,threshold) for site in outSites] ) ]
+  newIn    = [''.join(newSeq) for newSeq in zip(*[removeMinorCodons(site,threshold) for site in inSites])]
+  newOut   = [''.join(newSeq) for newSeq in zip(*[removeMinorCodons(site,threshold) for site in outSites])]
   ids      = [x[0] for x in inSeqs] + [x[0] for x in outSeqs]
   groups   = [x[2] for x in inSeqs] + [x[2] for x in outSeqs]
   return zip(ids, newIn + newOut, groups)
@@ -278,9 +285,9 @@ def removeMinorCodons(site,threshold):
 def polDivStats( record ):
   '''Calculates a dictionary of population statistics for a set of aligned sequences'''
   return { "name"                   : record[0][0],
-           "ingroup_sequences"      : sum( [x[2]==1 for x in record] ),
-           "outgroup_sequences"     : sum( [x[2]==999 for x in record] ),
-           "sequence_length"        : len( record[0][1] ),
+           "ingroup_sequences"      : sum([x[2]==1 for x in record]),
+           "outgroup_sequences"     : sum([x[2]==999 for x in record]),
+           "sequence_length"        : len(record[0][1]),
            "usable_sequence_length" : 3*usableSites(record)/float(len(record)),
            "Ssites"                 : DivPolStat.meanNumSynPos(record),
            "NSsites"                : DivPolStat.meanNumNonSynPos(record),
@@ -353,8 +360,8 @@ def main():
                 "P_S",
                 "D_N",
                 "D_S",]
-  resultsWriter = csv.DictWriter( sys.stdout, fieldNames )
-  resultsWriter.writerow( {k:k for k in fieldNames} )
+  resultsWriter = csv.DictWriter(sys.stdout, fieldNames)
+  resultsWriter.writerow({k:k for k in fieldNames})
   for line in results:
     resultsWriter.writerow(line)
 
