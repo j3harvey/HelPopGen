@@ -41,7 +41,7 @@ junk*
 *.csv
 
 # Ignore results folder
-results
+results/*
 
 # Ignore data folder
-data
+data/*
