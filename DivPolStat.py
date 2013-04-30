@@ -12,6 +12,8 @@ import itertools
 # HELPER FUNCTIONS AND CONSTANTS
 # 
 
+default_codon_table = CodonTable.standard_codon_table
+
 '''
 D is a dictionary of distances between codons.
 
@@ -21,36 +23,36 @@ c to d, and the second element if the number of synonymous mutations needed.
 
 '''
 D = dict()
-FT=CodonTable.standard_dna_table.forward_table
-for c in FT.keys():
+_FT=CodonTable.standard_dna_table.forward_table
+for c in _FT.keys():
     for i in range(3):
         for b in "ACGT":
             d = ''.join([c[j] if j != i else b for j in range(3)])
             if d == c:
                 D[(c,d)] = (0,0)
-            elif d not in FT.keys():
-                continue #D[(c,d)] = float('Inf')
+            elif d not in _FT.keys():
+                continue
             else:
-                D[(c,d)] = (0,1) if FT[c] == FT[d] else (1,0)
-for c1 in FT.keys():
-   for c2 in FT.keys():
+                D[(c,d)] = (0,1) if _FT[c] == _FT[d] else (1,0)
+for c1 in _FT.keys():
+   for c2 in _FT.keys():
         nequal = sum([c1[i] != c2[i] for i in range(3)])
         if nequal < 2:
             continue
         elif nequal == 2:
             D[(c1,c2)] = min(
               [(D[(c1,d)][0] + D[(d,c2)][0], D[(c1,d)][1] + D[(d,c2)][1]) 
-              for d in FT.keys() if (c1,d) in D.keys() and (d,c2) in D.keys()]
+              for d in _FT.keys() if (c1,d) in D.keys() and (d,c2) in D.keys()]
               )
         else:
             continue
-for c1 in FT.keys():
-    for c2 in FT.keys():
+for c1 in _FT.keys():
+    for c2 in _FT.keys():
         nequal = sum([c1[i] != c2[i] for i in range(3)])
         if nequal == 3:
             D[(c1,c2)] = min(
               [(D[(c1,d)][0] + D[(d,c2)][0], D[(c1,d)][1] + D[(d,c2)][1]) 
-              for d in FT.keys() if (c1,d) in D.keys() and (d,c2) in D.keys()]
+              for d in _FT.keys() if (c1,d) in D.keys() and (d,c2) in D.keys()]
               )
 
 def countMutations(site, ct=CodonTable.standard_dna_table):
@@ -62,7 +64,7 @@ def countMutations(site, ct=CodonTable.standard_dna_table):
     non-synonymous mutations, and the second element is the number of
     sysnonymous mutations.
 
-    This is an example of a Steiner Tree Problem, which is know to be
+    This is an example of a Steiner Tree Problem, which is known to be
     NP-hard.
 
     '''
@@ -108,7 +110,7 @@ def meanSynPos(record, codonTable=CodonTable.standard_dna_table):
     each site in the alignment.
 
     '''
-     ls = len(record[0][1]) - len(record[0][1]) % 3
+    ls = len(record[0][1]) - len(record[0][1]) % 3
     return sum([siteMeanSynPos(s, codonTable) 
                for s in [[x[1][i:i+3] for x in record] for i in range(0,ls,3)]])
 
@@ -133,7 +135,7 @@ def siteMeanSynPos(site, codonTable=CodonTable.standard_dna_table):
     possible at that site.
 
     '''
-     if any([(x in site) for x in codonTable.stop_codons]):
+    if any([(x in site) for x in codonTable.stop_codons]):
         return 0
     if any([("N" in x) for x in site]):
         return 0
@@ -170,14 +172,14 @@ def synPos(c, codonTable=CodonTable.standard_dna_table):
 # 
 
 def numDiv(record, codonTable=CodonTable.standard_dna_table):
+    '''Counts synonymous polymorphisms in a set of aligned sequences.'''
     ls = len(record[0][1]) - len(record[0][1]) % 3
     groups = [x[2] for x in record]
     if len(set(groups)) < 2:
-        # Record has only one group or is empty
-        return 0
+        return 0    # Record has only one group or is empty
     sites = [[x[1][i:i+3] for x in record] for i in range(0,ls,3)]
-    divS = 0 # Synonymous divergence
-    divNS = 0 # Non-synonymous divergence
+    divS = 0    # Synonymous divergence
+    divNS = 0   # Non-synonymous divergence
     for s in sites:
         if any([c in codonTable.stop_codons for c in s]) or any(['N' in c for c in s]):
             continue
@@ -186,9 +188,11 @@ def numDiv(record, codonTable=CodonTable.standard_dna_table):
     return {'S':divS, 'NS': divNS}
 
 def numNonSynDiv(record, codonTable=CodonTable.standard_dna_table):
+    '''Counts synonymous polymorphisms in a set of aligned sequences.'''
     return numDiv(record,codonTable)['NS']
 
 def numSynDiv(record, codonTable=CodonTable.standard_dna_table):
+    '''Counts synonymous polymorphisms in a set of aligned sequences.'''
     return numDiv(record,codonTable)['S']
 
 ###
@@ -200,14 +204,16 @@ def numSynPol(record, codonTable=CodonTable.standard_dna_table):
     '''Counts synonymous polymorphisms in a set of aligned sequences.'''
     ls = len(record[0][1]) - len(record[0][1]) % 3
     sites = [[x[1][i:i+3] for x in record] for i in range(0,ls,3)]
-    usableSites = [s for s in sites if not (any(['N' in c for c in s]) or any([c in s for c in codonTable.stop_codons]))]
+    usableSites = [s for s in sites if not 
+            (any(['N' in c for c in s]) or any([c in s for c in codonTable.stop_codons]))]
     return sum([siteSynPol(s, [x[2] for x in record], codonTable) for s in usableSites])
 
 def numNonSynPol(record, codonTable=CodonTable.standard_dna_table):
     '''Counts non-synonymous polymorphisms in a set of aligned sequences.'''
     ls = len(record[0][1]) - len(record[0][1]) % 3
     sites = [[x[1][i:i+3] for x in record] for i in range(0,ls,3)]
-    usableSites = [s for s in sites if not (any(['N' in c for c in s]) or any([c in s for c in codonTable.stop_codons]))]
+    usableSites = [s for s in sites if not 
+            (any(['N' in c for c in s]) or any([c in s for c in codonTable.stop_codons]))]
     return sum([siteNonSynPol(s, [x[2] for x in record], codonTable) for s in usableSites])
 
 def isPolymorphic(site, groups):
@@ -221,10 +227,17 @@ def isPolymorphic(site, groups):
 
 def siteSynPol(site, groups, codonTable):
     '''Counts synonymous polymorphism at a site.'''
-    return sum([countMutations([c for (c,g) in zip(site,groups) if g == h], codonTable)[1] for h in Counter(groups).keys()])
+    count = 0
+    for h in Counter(groups).keys():
+        s = [c for (c,g) in zip(site, groups) if g == h]
+        count += countMutations(s, codonTable)[1]
+    return count
 
 def siteNonSynPol(site, groups, codonTable):
     '''Counts non-synonymous polymorphism at a site.'''
-    return sum([countMutations([c for (c,g) in zip(site,groups) if g == h], codonTable)[0] for h in Counter(groups).keys()])
-
+    count = 0
+    for h in Counter(groups).keys():
+        s = [c for (c,g) in zip(site, groups) if g == h]
+        count += countMutations(s, codonTable)[0]
+    return count
 
