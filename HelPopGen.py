@@ -56,12 +56,12 @@ class Align:
         return self.ns
 
     def sites(self):
-        return [[x[i:i+3] for x in self.seqs] for i in range(0,self.ls - self.ls % 3,3)]
+        return [[x[i:i+3] for x in self.seqs] for i in range(0, self.ls - self.ls % 3, 3)]
 
-    def group(self, *args):
-        ids  = [self.ids[i] for i in range(self.ns) if self.groups[i] in args]
+    def getgroups(self, *args):
+        ids  = [self.ids[i]    for i in range(self.ns) if self.groups[i] in args]
         gps  = [self.groups[i] for i in range(self.ns) if self.groups[i] in args]
-        seqs = [self.seqs[i] for i in range(self.ns) if self.groups[i] in args]
+        seqs = [self.seqs[i]   for i in range(self.ns) if self.groups[i] in args]
         return Align(ids, seqs, name=self.name, groups=gps, descriptions=self.desc)
 
     def __getitem__(self, *args):
@@ -169,25 +169,25 @@ def phaseRecord(record):
     # [(id1,seq1a,group1), (id1,seq1b,group1), (id1,seq2a,group2),...]
     return zip( newIds, newSeqs, newGroups )
 
-ambiguousBases = {"K": ["G","T"],
-                  "M": ["A","C"],
-                  "R": ["A","G"],
-                  "S": ["C","G"],
-                  "W": ["A","T"],
-                  "Y": ["C","T"],}
+_ambiguousBases = {"K": ["G","T"],
+                   "M": ["A","C"],
+                   "R": ["A","G"],
+                   "S": ["C","G"],
+                   "W": ["A","T"],
+                   "Y": ["C","T"],}
 
 def phased( site ):
     '''Takes a site (list of N codons) and outputs a phased version of that site (2N codons)'''
     newSite = list()
     for c in site:
         # For each codon in the site, count how many ambiguous bases are present
-        numAmbig =  sum([b in ambiguousBases.keys() for b in c])
+        numAmbig =  sum([b in _ambiguousBases.keys() for b in c])
         if numAmbig == 0:
             newSite.extend([c]*2)
         elif numAmbig == 1:
             # Simple phasing  e.g. "ATK" --> "ATG" and "ATT"
             newSite.extend(map(lambda z: ''.join(z),
-                              product(*[ambiguousBases.get(x,x) for x in c])))
+                product(*[_ambiguousBases.get(x,x) for x in c])))
         elif numAmbig == 2:
             # Harder phasing  e.g. "KKT" --> ("GGT" and "TTT") or ("GTT" and "TGT")
             # This is yet to be implemented
@@ -214,7 +214,7 @@ def missingData(record):
     '''
     thresholds = [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
     counts     = [usableSites(record, t) for t in thresholds]
-    thres      = max([t for (t,c) in zip(thresholds,counts) if c == max(counts)])
+    thres      = max([t for (t, c) in zip(thresholds, counts) if c == max(counts)])
     return [x for x in record if x[2] != 0 and x[1].count("N")/float(len(x[1])) < thres]
 
 def usableSites(record, thres=1.0):
@@ -229,7 +229,7 @@ def usableSites(record, thres=1.0):
     ns = len(record)
     count = 0
     if ns > 0:
-        for i in range(0,len(record[0][1]),3):
+        for i in range(0, len(record[0][1]), 3):
             if all([(x[1][i:i+3] not in ["TGA","TAG","TAA"] and 
                 "N" not in x[1][i:i+3]) for x in record]):
                 count += ns
