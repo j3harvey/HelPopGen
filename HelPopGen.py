@@ -9,11 +9,15 @@ the 'usage' information './HelPolGen.py --help'
 '''
 import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument("threshold", help="Minor allele frequency cutoff", nargs='?', type=float, default=0.0)
+parser.add_argument("threshold", 
+                    help="Minor allele frequency cutoff", 
+                    nargs='?', 
+                    type=float, 
+                    default=0.0)
 args = parser.parse_args()
 THRESHOLD = args.threshold
-INPUT_FILE = "ag5am5era4_allGenes_ambig.fasta"
-  
+INPUT_FILE = "data/ag5am5era4_allGenes_ambig.fasta"
+
 import Bio.SeqIO
 from Bio.Data import CodonTable
 import csv
@@ -226,12 +230,13 @@ def usableSites(record, thres=1.0):
     count = 0
     if ns > 0:
         for i in range(0,len(record[0][1]),3):
-            if all([(x[1][i:i+3] not in ["TGA","TAG","TAA"] and "N" not in x[1][i:i+3]) for x in record]):
+            if all([(x[1][i:i+3] not in ["TGA","TAG","TAA"] and 
+                "N" not in x[1][i:i+3]) for x in record]):
                 count += ns
     return count
 
 def qualityCheck(record):
-    '''Checks that a record is suitable for calculation of polymorphism  and divergence statistics.
+    '''Checks that a record is suitable for calculation of polymorphism and divergence statistics.
     
     Takes a record (a list of aligned sequences, with their identifiers and group
     numbers) as input. Returns 'True' if the data is suitable for calculation of
@@ -260,8 +265,10 @@ def removeMinorAlleles(record, threshold):
     outSeqs  = [x for x in record if x[2] == 999]
     inSites  = [[x[1][i:i+3] for x in inSeqs] for i in range(0,ls,3)]
     outSites = [[x[1][i:i+3] for x in outSeqs] for i in range(0,ls,3)]
-    newIn    = [''.join(newSeq) for newSeq in zip(*[removeMinorCodons(site,threshold) for site in inSites])]
-    newOut   = [''.join(newSeq) for newSeq in zip(*[removeMinorCodons(site,threshold) for site in outSites])]
+    newIn    = [''.join(newSeq) for newSeq in 
+                  zip(*[removeMinorCodons(site,threshold) for site in inSites])]
+    newOut   = [''.join(newSeq) for newSeq in 
+                  zip(*[removeMinorCodons(site,threshold) for site in outSites])]
     ids      = [x[0] for x in inSeqs] + [x[0] for x in outSeqs]
     groups   = [x[2] for x in inSeqs] + [x[2] for x in outSeqs]
     return zip(ids, newIn + newOut, groups)
@@ -297,37 +304,8 @@ def polDivStats( record ):
              "D_S"                    : DivPolStat.numSynDiv(record),
            }
 
-###
-# 
-# MAIN ROUTINE
-# 
-
-def main():
-    '''Calculate statistics for each set of aligned sequences in the input file.
-    
-    The main routine runs as follows:
-    
-    1) Load unphased data in an object 'records'
-    2) Remove sequences with group number 0 (i.e. all 'ignored' sequences)
-    3) Attempt to phase the data using the 'phased' function. Insert 'N's whenever phasing fails.
-    4) Attempt to maximise the amount of usable data ( = number of sequences x number of usable
-       sites) for each record. The strategy used is:
-          i)   Pick a threshold t between 0 and 1.
-          ii)  Discard sequences with a proportion of missing data greater than t.
-          iii) The amount of usable data = number of remaining sequences x number of sites with no 'N's
-          iv)  Repeat for other values of t and choose the best value.
-       This search for an optimum threshold for each site is carried out by the 'missingData' function.
-       The sequences remaining after step (ii) are stored in an object called 'usableData'.
-    5) For each alignment in 'usableData' that passes certain quality control tests ( the function 
-       'qualityCheck' ) we calculate some polymorphism and divergence statistics:
-          i)   Number of synonymous and non-synonymous sites
-          ii)  Number of polymorphic sites
-          iii) Number of divergent sites
-    
-    '''
-    
-    '''
-    # Genome-wide estimate of Transition:Transversion (tr:tv) ratio
+def trtv():
+    '''Genome-wide estimate of Transition:Transversion (tr:tv) ratio'''
     tr = 0
     tv = 0
     for r in dataRecords():
@@ -340,6 +318,40 @@ def main():
               if ('A' in bases or 'G' in bases) and ('C' in bases or 'T' in bases):
                   tv += 1
     # Result: tr = 575644,  tv = 266020
+    return (tr, tv)
+
+###
+# 
+# MAIN ROUTINE
+# 
+
+def main():
+    '''Calculate statistics for each set of aligned sequences in the input file.
+    
+    The main routine runs as follows:
+    
+    1) Load unphased data in an object 'records'
+    2) Remove sequences with group number 0 (i.e. all 'ignored' sequences)
+    3) Attempt to phase the data using the 'phased' function. Insert 'N's 
+       whenever phasing fails.
+    4) Attempt to maximise the amount of usable data ( = number of sequences 
+       x number of usable sites) for each record. The strategy used is:
+          i)   Pick a threshold t between 0 and 1.
+          ii)  Discard sequences with a proportion of missing data greater 
+               than t.
+          iii) The amount of usable data = number of remaining sequences x 
+               number of sites with no 'N's
+          iv)  Repeat for other values of t and choose the best value.
+       This search for an optimum threshold for each site is carried out by 
+       the 'missingData' function. The sequences remaining after step (ii) 
+       are stored in an object called 'usableData'.
+    5) For each alignment in 'usableData' that passes certain quality control 
+       tests ( the function 'qualityCheck' ) we calculate some polymorphism 
+       and divergence statistics:
+          i)   Number of synonymous and non-synonymous sites
+          ii)  Number of polymorphic sites
+          iii) Number of divergent sites
+    
     '''
     
     records        = (record               for record in dataRecords())
