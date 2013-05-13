@@ -12,7 +12,7 @@ import itertools
 # HELPER FUNCTIONS AND CONSTANTS
 # 
 
-default_codon_table = CodonTable.standard_codon_table
+default_codon_table = CodonTable.standard_dna_table
 
 '''
 D is a dictionary of distances between codons.
@@ -23,7 +23,7 @@ c to d, and the second element if the number of synonymous mutations needed.
 
 '''
 D = dict()
-_FT=CodonTable.standard_dna_table.forward_table
+_FT=default_codon_table.forward_table
 for c in _FT.keys():
     for i in range(3):
         for b in "ACGT":
@@ -55,7 +55,7 @@ for c1 in _FT.keys():
               for d in _FT.keys() if (c1,d) in D.keys() and (d,c2) in D.keys()]
               )
 
-def countMutations(site, ct=CodonTable.standard_dna_table):
+def countMutations(site, ct=default_codon_table):
     '''
     Uses a heuristic method (Kruskal's algorithm) to find a set of mutations 
     that can explain the polymorphism observed at the site.
@@ -90,7 +90,7 @@ def countMutations(site, ct=CodonTable.standard_dna_table):
 # MUTATIONAL OPPORTTUNITY STATISTICS
 # 
 
-def meanNonSynPos(record, codonTable=CodonTable.standard_dna_table):
+def meanNonSynPos(record, codonTable=default_codon_table):
     '''Calculates the number of non-synonymous positions in an alignment.
 
     Calculates the mean number of non-synonymous sites in a set of aligned 
@@ -102,7 +102,7 @@ def meanNonSynPos(record, codonTable=CodonTable.standard_dna_table):
     return sum([siteMeanNonSynPos(s, codonTable) 
                for s in [[x[1][i:i+3] for x in record] for i in range(0,ls,3)]])
 
-def meanSynPos(record, codonTable=CodonTable.standard_dna_table):
+def meanSynPos(record, codonTable=default_codon_table):
     '''Calculates the number of synonymous positions in an alignment.
 
     Calculates the mean number of synonymous sites in a set of aligned 
@@ -114,7 +114,7 @@ def meanSynPos(record, codonTable=CodonTable.standard_dna_table):
     return sum([siteMeanSynPos(s, codonTable) 
                for s in [[x[1][i:i+3] for x in record] for i in range(0,ls,3)]])
 
-def siteMeanNonSynPos(site, codonTable=CodonTable.standard_dna_table):
+def siteMeanNonSynPos(site, codonTable=default_codon_table):
     '''Calculates the mean number of non-synonymous positions at a site.
     
     The return value is the average number of non-synonymous substitutions
@@ -128,7 +128,7 @@ def siteMeanNonSynPos(site, codonTable=CodonTable.standard_dna_table):
     freqs = Counter(site)
     return sum([freqs[c]*nonSynPos(c,codonTable) for c in freqs.keys()])/float(len(site))
 
-def siteMeanSynPos(site, codonTable=CodonTable.standard_dna_table):
+def siteMeanSynPos(site, codonTable=default_codon_table):
     '''Calculates the number of synonymous positions at a site.
 
     The return value is the average number of synonymous substitutions
@@ -142,7 +142,7 @@ def siteMeanSynPos(site, codonTable=CodonTable.standard_dna_table):
     freqs = Counter(site)
     return sum([freqs[c]*synPos(c,codonTable) for c in freqs.keys()])/float(len(site))
 
-def nonSynPos(c, codonTable=CodonTable.standard_dna_table):
+def nonSynPos(c, codonTable=default_codon_table):
     '''Calculates the number of non-synonymous positions in a codon.
     
     The return value is the number of substitutions that will alter the amino 
@@ -157,7 +157,7 @@ def nonSynPos(c, codonTable=CodonTable.standard_dna_table):
                 count += 1
     return count
 
-def synPos(c, codonTable=CodonTable.standard_dna_table):
+def synPos(c, codonTable=default_codon_table):
     '''Calculates the number of synonymous positions in a codon.
     
     The return value is the number of substitutions that do not alter the 
@@ -171,7 +171,7 @@ def synPos(c, codonTable=CodonTable.standard_dna_table):
 # DIVERGENCE STATISTICS
 # 
 
-def numDiv(record, codonTable=CodonTable.standard_dna_table):
+def numDiv(record, codonTable=default_codon_table):
     '''Counts synonymous polymorphisms in a set of aligned sequences.'''
     ls = len(record[0][1]) - len(record[0][1]) % 3
     groups = [x[2] for x in record]
@@ -187,11 +187,11 @@ def numDiv(record, codonTable=CodonTable.standard_dna_table):
         divNS += countMutations(s, codonTable)[0]
     return {'S':divS, 'NS': divNS}
 
-def numNonSynDiv(record, codonTable=CodonTable.standard_dna_table):
+def numNonSynDiv(record, codonTable=default_codon_table):
     '''Counts synonymous polymorphisms in a set of aligned sequences.'''
     return numDiv(record,codonTable)['NS']
 
-def numSynDiv(record, codonTable=CodonTable.standard_dna_table):
+def numSynDiv(record, codonTable=default_codon_table):
     '''Counts synonymous polymorphisms in a set of aligned sequences.'''
     return numDiv(record,codonTable)['S']
 
@@ -200,7 +200,7 @@ def numSynDiv(record, codonTable=CodonTable.standard_dna_table):
 # POLYMORPHISM STATISTICS
 # 
 
-def numSynPol(record, codonTable=CodonTable.standard_dna_table):
+def numSynPol(record, codonTable=default_codon_table):
     '''Counts synonymous polymorphisms in a set of aligned sequences.'''
     ls = len(record[0][1]) - len(record[0][1]) % 3
     sites = [[x[1][i:i+3] for x in record] for i in range(0,ls,3)]
@@ -208,7 +208,7 @@ def numSynPol(record, codonTable=CodonTable.standard_dna_table):
             (any(['N' in c for c in s]) or any([c in s for c in codonTable.stop_codons]))]
     return sum([siteSynPol(s, [x[2] for x in record], codonTable) for s in usableSites])
 
-def numNonSynPol(record, codonTable=CodonTable.standard_dna_table):
+def numNonSynPol(record, codonTable=default_codon_table):
     '''Counts non-synonymous polymorphisms in a set of aligned sequences.'''
     ls = len(record[0][1]) - len(record[0][1]) % 3
     sites = [[x[1][i:i+3] for x in record] for i in range(0,ls,3)]

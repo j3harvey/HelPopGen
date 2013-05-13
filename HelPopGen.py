@@ -230,8 +230,14 @@ def polDivStats( record ):
              "usable_sequence_length" : 3*usableSites(record)/float(len(record)),
              "Ssites"                 : DivPolStat.meanNumSynPos(record),
              "NSsites"                : DivPolStat.meanNumNonSynPos(record),
-             "P_N"                    : DivPolStat.numNonSynPol(record),
-             "P_S"                    : DivPolStat.numSynPol(record),
+             "out_P_N"                : DivPolStat.numNonSynPol(
+                                                [x for x in record if x[2] == 999]),
+             "out_P_S"                : DivPolStat.numSynPol(
+                                                [x for x in record if x[2] == 999]),
+             "in_P_N"                 : DivPolStat.numNonSynPol(
+                                                [x for x in record if x[2] == 1]),
+             "in_P_S"                 : DivPolStat.numSynPol(
+                                                [x for x in record if x[2] == 1]),
              "D_N"                    : DivPolStat.numNonSynDiv(record),
              "D_S"                    : DivPolStat.numSynDiv(record),
            }
@@ -300,8 +306,10 @@ def main():
                   "usable_sequence_length",
                   "Ssites",
                   "NSsites",
-                  "P_N",
-                  "P_S",
+                  "out_P_N",
+                  "out_P_S",
+                  "in_P_N",
+                  "in_P_S",
                   "D_N",
                   "D_S",]
     resultsWriter = csv.DictWriter(sys.stdout, fieldNames)
