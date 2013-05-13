@@ -164,14 +164,14 @@ def synPos(c, codonTable=default_codon_table):
     amino acid coded for by this codon.
     
     '''
-    return 9 - numNonSynPos(c,codonTable)
+    return 9 - nonSynPos(c,codonTable)
 
 ###
 # 
 # DIVERGENCE STATISTICS
 # 
 
-def numDiv(record, codonTable=default_codon_table):
+def div(record, codonTable=default_codon_table):
     '''Counts synonymous polymorphisms in a set of aligned sequences.'''
     ls = len(record[0][1]) - len(record[0][1]) % 3
     groups = [x[2] for x in record]
@@ -187,20 +187,20 @@ def numDiv(record, codonTable=default_codon_table):
         divNS += countMutations(s, codonTable)[0]
     return {'S':divS, 'NS': divNS}
 
-def numNonSynDiv(record, codonTable=default_codon_table):
+def nonSynDiv(record, codonTable=default_codon_table):
     '''Counts synonymous polymorphisms in a set of aligned sequences.'''
-    return numDiv(record,codonTable)['NS']
+    return div(record,codonTable)['NS']
 
-def numSynDiv(record, codonTable=default_codon_table):
+def synDiv(record, codonTable=default_codon_table):
     '''Counts synonymous polymorphisms in a set of aligned sequences.'''
-    return numDiv(record,codonTable)['S']
+    return div(record,codonTable)['S']
 
 ###
 # 
 # POLYMORPHISM STATISTICS
 # 
 
-def numSynPol(record, codonTable=default_codon_table):
+def synPol(record, codonTable=default_codon_table):
     '''Counts synonymous polymorphisms in a set of aligned sequences.'''
     ls = len(record[0][1]) - len(record[0][1]) % 3
     sites = [[x[1][i:i+3] for x in record] for i in range(0,ls,3)]
@@ -208,7 +208,7 @@ def numSynPol(record, codonTable=default_codon_table):
             (any(['N' in c for c in s]) or any([c in s for c in codonTable.stop_codons]))]
     return sum([siteSynPol(s, [x[2] for x in record], codonTable) for s in usableSites])
 
-def numNonSynPol(record, codonTable=default_codon_table):
+def nonSynPol(record, codonTable=default_codon_table):
     '''Counts non-synonymous polymorphisms in a set of aligned sequences.'''
     ls = len(record[0][1]) - len(record[0][1]) % 3
     sites = [[x[1][i:i+3] for x in record] for i in range(0,ls,3)]

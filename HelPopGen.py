@@ -144,10 +144,22 @@ def missingData(record):
     The return value is a record with all sequences with proportion >t* missing data removed.
     
     '''
+    # Find optimum threshold
     thresholds = [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
     counts     = [usableSites(record, t) for t in thresholds]
     thres      = max([t for (t, c) in zip(thresholds, counts) if c == max(counts)])
-    return [x for x in record if x[2] != 0 and x[1].count("N")/float(len(x[1])) < thres]
+    # Return only usable sites from sequences with fraction of mission data less
+    # than the optimum threshold
+    newIds = [x[0] for x in record if x[2] != 0 and x[1].count("N")/float(len(x[1])) < thres]
+    newGroups = [x[2] for x in record if x[2] != 0 and x[1].count("N")/float(len(x[1])) < thres]
+    ls = len(record[0][1]) - len(record[0][1]) % 3
+    newSeqs = [x[1] for x in record if x[2] != 0 and x[1].count("N")/float(len(x[1])) < thres]
+    newSites = [[x[i:i+3] for x in newSeqs] for i in range(0, ls, 3)]
+    usableSites = [s for s in newSites
+            if not any(["N" in c for c in s])
+            and not any([c in ["TGA", "TAG", "TAA"] for c in s])]
+    usableSeqs = [''.join(x) for x in zip(*usableSites)]
+    return zip(newIds, usableSeqs, newGroups)
 
 def usableSites(record, thres=1.0):
     '''Calculates the amount of usable data in a record
@@ -226,20 +238,20 @@ def polDivStats( record ):
     return { "name"                   : record[0][0],
              "ingroup_sequences"      : sum([x[2]==1 for x in record]),
              "outgroup_sequences"     : sum([x[2]==999 for x in record]),
-             "sequence_length"        : len(record[0][1]),
+             #"sequence_length"        : len(record[0][1]),
              "usable_sequence_length" : 3*usableSites(record)/float(len(record)),
-             "Ssites"                 : DivPolStat.meanNumSynPos(record),
-             "NSsites"                : DivPolStat.meanNumNonSynPos(record),
-             "out_P_N"                : DivPolStat.numNonSynPol(
+             "Ssites"                 : DivPolStat.meanSynPos(record),
+             "NSsites"                : DivPolStat.meanNonSynPos(record),
+             "out_P_N"                : DivPolStat.nonSynPol(
                                                 [x for x in record if x[2] == 999]),
-             "out_P_S"                : DivPolStat.numSynPol(
+             "out_P_S"                : DivPolStat.synPol(
                                                 [x for x in record if x[2] == 999]),
-             "in_P_N"                 : DivPolStat.numNonSynPol(
+             "in_P_N"                 : DivPolStat.nonSynPol(
                                                 [x for x in record if x[2] == 1]),
-             "in_P_S"                 : DivPolStat.numSynPol(
+             "in_P_S"                 : DivPolStat.synPol(
                                                 [x for x in record if x[2] == 1]),
-             "D_N"                    : DivPolStat.numNonSynDiv(record),
-             "D_S"                    : DivPolStat.numSynDiv(record),
+             "D_N"                    : DivPolStat.nonSynDiv(record),
+             "D_S"                    : DivPolStat.synDiv(record),
            }
 
 def trtv():
