@@ -25,6 +25,7 @@ import sys
 from itertools import product, chain
 from collections import Counter
 import DivPolStat
+import re
 
 def dataRecords():
     '''A generator of aligned sequences for each locus in the data set.
@@ -155,10 +156,10 @@ def missingData(record):
     ls = len(record[0][1]) - len(record[0][1]) % 3
     newSeqs = [x[1] for x in record if x[2] != 0 and x[1].count("N")/float(len(x[1])) < thres]
     newSites = [[x[i:i+3] for x in newSeqs] for i in range(0, ls, 3)]
-    usableSites = [s for s in newSites
+    goodSites = [s for s in newSites
             if not any(["N" in c for c in s])
             and not any([c in ["TGA", "TAG", "TAA"] for c in s])]
-    usableSeqs = [''.join(x) for x in zip(*usableSites)]
+    usableSeqs = [''.join(x) for x in zip(*goodSites)]
     return zip(newIds, usableSeqs, newGroups)
 
 def usableSites(record, thres=1.0):
@@ -235,7 +236,8 @@ def removeMinorCodons(site,threshold):
 
 def polDivStats( record ):
     '''Calculates a dictionary of population statistics for a set of aligned sequences'''
-    return { "name"                   : record[0][0],
+    return { "name"                   : (re.findall(r'HMEL[0-9]+', record[0][0]) +
+                                                re.findall(r'HmGr[0-9]+', record[0][0]))[0],
              "ingroup_sequences"      : sum([x[2]==1 for x in record]),
              "outgroup_sequences"     : sum([x[2]==999 for x in record]),
              #"sequence_length"        : len(record[0][1]),
