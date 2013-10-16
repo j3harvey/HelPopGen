@@ -38,16 +38,17 @@ for th in ["0.00",
     
     with open("mktest_genomeWide" + th + ".csv", 'w') as f:
         for x in hpg:
-            f.write(','.join([x['D_N'],
-                              str(float(x['NSsites'])/3),
-                              x['in_P_N'],
-                              str(float(x['NSsites'])/3),
-                              x['D_S'],
-                              str(float(x['Ssites'])/3),
-                              x['in_P_S'],
-                              str(float(x['Ssites'])/3),
-                              x['ingroup_sequences'],
-                             ]) + '\n')
+            if float(x['Ssites']) > 1 and float(x['NSsites']) > 1:
+                f.write(','.join([x['D_N'],
+                                  str(float(x['NSsites'])/3),
+                                  x['in_P_N'],
+                                  str(float(x['NSsites'])/3),
+                                  x['D_S'],
+                                  str(float(x['Ssites'])/3),
+                                  x['in_P_S'],
+                                  str(float(x['Ssites'])/3),
+                                  x['ingroup_sequences'],
+                                 ]) + '\n')
     
     ###
     #
