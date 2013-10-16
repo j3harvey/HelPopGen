@@ -79,6 +79,7 @@ def assignGroup( seq ):
     # Ignore pardalinus (an alternative outgroup)
     # Also ignore the three inbred individuals.
     #ignored = ["pardalinus", "Hmel", "aglaope.1_", "amaryllis.1_"]
+    ignored = []
     # All other amaryllis and aglaope are "in"
     #ingroups = ["aglaope", "amaryllis"]
     ingroups = ["ec9117",
