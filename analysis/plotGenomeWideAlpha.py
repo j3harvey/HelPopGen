@@ -1,4 +1,4 @@
-import matplotlib.pyplot as plt
+from matplotlib.pyplot import plot, xlabel, ylabel, savefig
 from numpy import linspace
 
 alpha = []
@@ -29,8 +29,8 @@ for th in ["0.00",
 
 print alpha
 
-plt.plot( linspace(0, 0.4, 21), alpha )
+plot( linspace(0, 0.4, 21), alpha )
 xlabel("cut-off frequency")
 ylabel("alpha")
-plt.savefig("alpha.pdf")
+savefig("alpha.pdf")
 
