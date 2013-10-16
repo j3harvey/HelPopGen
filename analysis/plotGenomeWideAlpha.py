@@ -1,3 +1,6 @@
+import matplotlib.pyplot as plt
+from numpy import linspace
+
 alpha = []
 
 for th in ["0.00",
@@ -24,6 +27,10 @@ for th in ["0.00",
     with open("genomeWideAlpha" + th + ".mkout", 'r') as f:
         alpha.append(float(f.readlines()[1].split('\t')[-1]))
 
-    print alpha
+print alpha
 
+plt.plot( linspace(0, 0.4, 21), alpha )
+xlabel("cut-off frequency")
+ylabel("alpha")
+plt.savefig("alpha.pdf")
 
