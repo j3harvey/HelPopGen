@@ -51,12 +51,12 @@ def dataRecords():
     seqs = Bio.SeqIO.parse(INPUT_FILE, 'fasta')
     record = []
     for seq in seqs:
-        if len(record) == 16:
+        if len(record) == 65:
             yield [x for x in record if x[2] != 0]
             record = [(seq.id, seq.seq.upper().tostring(), assignGroup(seq))]
         else:
             record.append((seq.id, seq.seq.upper().tostring(), assignGroup(seq)))
-    if len(record) == 16:
+    if len(record) == 65:
         yield [x for x in record if x[2] != 0]
 
 def assignGroup( seq ):
@@ -78,12 +78,38 @@ def assignGroup( seq ):
     '''
     # Ignore pardalinus (an alternative outgroup)
     # Also ignore the three inbred individuals.
-    ignored = ["pardalinus", "Hmel", "aglaope.1_", "amaryllis.1_"]
+    #ignored = ["pardalinus", "Hmel", "aglaope.1_", "amaryllis.1_"]
     # All other amaryllis and aglaope are "in"
-    ingroups = ["aglaope", "amaryllis"]
+    #ingroups = ["aglaope", "amaryllis"]
+    ingroups = ["ec9117",
+                "ec9121",
+                "aman2228",
+                "moc228",
+                "moc231",
+                "mapl16042",
+                "moc16",
+                "moc17",
+                "mal21",
+                "mal22",
+                "mal24",
+                "ag108",
+                "am216",
+                "ag572",
+                "ag112",
+                "ag569",
+                "am160",
+                "am48",
+                "am293",
+                "mal16550",
+                "ple9156",
+                "aman2221",]
     # Erato is the outgroup
-    outgroups = ["erato"]
-    
+    #outgroups = ["erato"]
+    outgroups = ["era2979",
+                 "era2980",
+                 "era2981",
+                 "era618",]
+
     if any([seq.id.startswith(x) for x in ignored]):
         return 0
     elif any([seq.id.startswith(x) for x in ingroups]):
