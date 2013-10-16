@@ -40,6 +40,9 @@ junk*
 # Ignore .csv results files.
 *.csv
 
+# Ignore analysis folder
+analysis/*
+
 # Ignore results folder
 results/*
 
