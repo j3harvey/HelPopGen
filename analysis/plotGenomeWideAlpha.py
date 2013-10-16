@@ -22,7 +22,7 @@ for th in ["0.00",
            "0.38",
            "0.40",]:
     with open("genomeWideAlpha" + th + ".mkout", 'r') as f:
-        alpha.append(float(f.readlines(1).split('\t')[-1]))
+        alpha.append(float(f.readlines[1].split('\t')[-1]))
 
     print alpha
 
