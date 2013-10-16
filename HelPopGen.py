@@ -14,9 +14,14 @@ parser.add_argument("threshold",
                     nargs='?', 
                     type=float, 
                     default=0.0)
+parser.add_argument("file", 
+                    help="Input file of aligned sequences", 
+                    nargs='?', 
+                    type=str, 
+                   )
 args = parser.parse_args()
+INPUT_FILE = args.file
 THRESHOLD = args.threshold
-INPUT_FILE = "data/ag5am5era4_allGenes_ambig.fasta"
 
 import Bio.SeqIO
 from Bio.Data import CodonTable
@@ -94,7 +99,8 @@ def phaseRecord(record):
     # Repeat each id and group twice
     newIds    = chain(*[[x[0],x[0]] for x in record])
     newGroups = chain(*[[x[2],x[2]] for x in record])
-    # Perform phasing at each site in the alignment and form a new alignment of the phased sequences
+    # Perform phasing at each site in the alignment and form a new alignment 
+    # of the phased sequences
     ls        = len(record[0][1]) - len(record[0][1]) % 3
     sites     = [[x[1][i:i+3] for x in record] for i in range(0,ls,3)]
     newSeqs   = [''.join(newSeq) for newSeq in zip( *[phased(site) for site in sites])]
@@ -240,7 +246,6 @@ def polDivStats( record ):
                                                 re.findall(r'HmGr[0-9]+', record[0][0]))[0],
              "ingroup_sequences"      : sum([x[2]==1 for x in record]),
              "outgroup_sequences"     : sum([x[2]==999 for x in record]),
-             #"sequence_length"        : len(record[0][1]),
              "usable_sequence_length" : 3*usableSites(record)/float(len(record)),
              "Ssites"                 : DivPolStat.meanSynPos(record),
              "NSsites"                : DivPolStat.meanNonSynPos(record),
@@ -269,7 +274,6 @@ def trtv():
                   tr += 1
               if ('A' in bases or 'G' in bases) and ('C' in bases or 'T' in bases):
                   tv += 1
-    # Result: tr = 575644,  tv = 266020
     return (tr, tv)
 
 ###
@@ -287,7 +291,7 @@ def main():
     3) Attempt to phase the data using the 'phased' function. Insert 'N's 
        whenever phasing fails.
     4) Attempt to maximise the amount of usable data ( = number of sequences 
-       x number of usable sites) for each record. The strategy used is:
+       x number of aligned sites) for each record. The strategy used is:
           i)   Pick a threshold t between 0 and 1.
           ii)  Discard sequences with a proportion of missing data greater 
                than t.
@@ -308,7 +312,6 @@ def main():
     
     records        = (record               for record in dataRecords())
     phased_records = (phaseRecord(record)  for record in records)
-    #no_stops       = (stopsRemoved(record) for record in phased_records)
     major_alleles  = (removeMinorAlleles(record, THRESHOLD) for record in phased_records)
     usable_data    = (missingData(record)  for record in major_alleles)
     results        = (polDivStats(record)  for record in usable_data if qualityCheck(record))
@@ -316,7 +319,6 @@ def main():
     fieldNames = ["name",
                   "ingroup_sequences",
                   "outgroup_sequences",
-                  "sequence_length",
                   "usable_sequence_length",
                   "Ssites",
                   "NSsites",

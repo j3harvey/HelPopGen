@@ -57,8 +57,8 @@ for c1 in _FT.keys():
 
 def countMutations(site, ct=default_codon_table):
     '''
-    Uses a heuristic method (Kruskal's algorithm) to find a set of mutations 
-    that can explain the polymorphism observed at the site.
+    Uses a heuristic method (based on Kruskal's algorithm) to find a set of 
+    mutations that can explain the polymorphism observed at the site.
 
     The return value is a tuple: the first element is the number of
     non-synonymous mutations, and the second element is the number of
@@ -126,7 +126,7 @@ def siteMeanNonSynPos(site, codonTable=default_codon_table):
     if any([("N" in x) for x in site]):
         return 0
     freqs = Counter(site)
-    return sum([freqs[c]*nonSynPos(c,codonTable) for c in freqs.keys()])/float(len(site))
+    return sum([freqs[c]*nonSynPos(c,codonTable) for c in freqs.keys()])/(3.0*len(site))
 
 def siteMeanSynPos(site, codonTable=default_codon_table):
     '''Calculates the number of synonymous positions at a site.
@@ -140,7 +140,7 @@ def siteMeanSynPos(site, codonTable=default_codon_table):
     if any([("N" in x) for x in site]):
         return 0
     freqs = Counter(site)
-    return sum([freqs[c]*synPos(c,codonTable) for c in freqs.keys()])/float(len(site))
+    return sum([freqs[c]*synPos(c,codonTable) for c in freqs.keys()])/(3.0*len(site))
 
 def nonSynPos(c, codonTable=default_codon_table):
     '''Calculates the number of non-synonymous positions in a codon.
