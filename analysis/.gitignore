@@ -1,2 +1,5 @@
 # Directory must not be empty in order to be tracked by git
 !.gitignore
+
+!*.py
+
