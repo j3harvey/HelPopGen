@@ -55,7 +55,7 @@ for th in ["0.00",
     # Run MKtest
     #
     
-    subprocess.call(['../../MKtest-2.0/MKtest', 'mktest_genomeWide' + th + '.csv', '-o', 'genomeWideAlpha' + th + '.mkout'])
+    subprocess.call(['../../MKtest-2.0/MKtest', '-f2', 'mktest_genomeWide' + th + '.csv', '-o', 'genomeWideAlpha' + th + '.mkout'])
 
 
 
