@@ -41,7 +41,7 @@ junk*
 *.csv
 
 # Ignore analysis folder
-analysis/*
+#analysis/*
 
 # Ignore results folder
 results/*
