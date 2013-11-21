@@ -3,5 +3,8 @@
 
 !*.py
 
-*.mkout
 kipple/*
+!kipple/*.py
+!kipple/*.R
+
+*.mkout
