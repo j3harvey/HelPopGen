@@ -64,8 +64,8 @@ for gene in hmel_genes:
 	gene['Ln'] = float(gene['NSsites'])/3
 	gene['Ls'] = float(gene['Ssites'])/3
 	row = {k: gene(k) for k in mkin_headers}
-	if row
-	mkin_writer.writerow(row)
+	if row['Ls'] > 1 and row['Ln'] > 1:
+		mkin_writer.writerow(row)
 
 ###
 #
